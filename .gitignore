@@ -41,3 +41,4 @@ target_app.before_sqli/
 .DS_Store
 *.swp
 *~
+*.save
