@@ -1,0 +1,763 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="/static/styles.css" />
+  <title>CyberRangeCore · Sesión {{ session.id }}</title>
+
+  <!-- Actualización automática de eventos -->
+  {% if session.status != "FINISHED" %}
+    <meta http-equiv="refresh" content="10">
+  {% endif %}
+</head>
+
+<body class="session-console-page">
+
+  <header class="console-topbar">
+
+    <div class="console-brand">
+      <span class="brand-mark">CR</span>
+
+      <div>
+        <strong>CyberRangeCore</strong>
+        <small>CSIRT TRAINING CONSOLE</small>
+      </div>
+    </div>
+
+    <div class="console-session-meta">
+
+      <div class="topbar-item">
+        <span>ESCENARIO</span>
+        <strong>{{ session.scenario_id }}</strong>
+      </div>
+
+      <div class="topbar-item">
+        <span>SESIÓN</span>
+        <strong>#{{ session.id }}</strong>
+      </div>
+
+      <div class="topbar-item">
+        <span>TIEMPO</span>
+        <strong>{{ elapsed_min }} min</strong>
+      </div>
+
+      <div class="topbar-status">
+
+        {% if session.status == "FINISHED" %}
+          <span class="status-dot finished"></span>
+          FINALIZADA
+        {% else %}
+          <span class="status-dot running"></span>
+          ACTIVA
+        {% endif %}
+
+      </div>
+
+    </div>
+
+  </header>
+
+
+  <main class="console-layout">
+
+    <!-- ==================================================
+         PANEL IZQUIERDO
+         ================================================== -->
+
+    <aside class="console-sidebar">
+
+      <section class="console-panel">
+
+        <div class="panel-heading">
+          <span class="panel-kicker">OPERADORES</span>
+          <h2>Equipo asignado</h2>
+        </div>
+
+        <div class="operator-card">
+
+          <div class="operator-icon">
+            SOC
+          </div>
+
+          <div>
+            <span class="operator-role">
+              SOC ANALYST
+            </span>
+
+            <strong>
+              {{ roles.SOC_ANALYST }}
+            </strong>
+          </div>
+
+        </div>
+
+        <div class="operator-card">
+
+          <div class="operator-icon">
+            IR
+          </div>
+
+          <div>
+            <span class="operator-role">
+              IR LEAD
+            </span>
+
+            <strong>
+              {{ roles.IR_LEAD }}
+            </strong>
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <section class="console-panel">
+
+        <div class="panel-heading">
+          <span class="panel-kicker">MISIÓN</span>
+          <h2>{{ session.scenario_id }}</h2>
+        </div>
+
+        <p class="sidebar-copy">
+          Analice la evidencia disponible, documente
+          sus decisiones y responda al incidente conforme
+          evoluciona el escenario.
+        </p>
+
+        {% if session.status == "FINISHED" %}
+
+          <a
+            class="console-button secondary"
+            href="/session/{{ session.id }}/report"
+          >
+            Ver reporte final
+          </a>
+
+        {% else %}
+
+          <form
+            class="finish-form"
+            method="post"
+            action="/session/{{ session.id }}/finish"
+          >
+            <button
+              class="console-button danger"
+              type="submit"
+            >
+              Finalizar sesión
+            </button>
+          </form>
+
+        {% endif %}
+
+      </section>
+
+
+      <a
+        class="console-back-link"
+        href="/"
+      >
+        ← Volver al inicio
+      </a>
+
+    </aside>
+
+
+    <!-- ==================================================
+         CENTRO - TIMELINE
+         ================================================== -->
+
+    <section class="console-center">
+
+      <div class="section-header">
+
+        <div>
+          <span class="panel-kicker">
+            INCIDENT RESPONSE
+          </span>
+
+          <h1>
+            Timeline del incidente
+          </h1>
+        </div>
+
+        <div class="event-counter">
+          {{ timeline|length }} eventos
+        </div>
+
+      </div>
+
+
+      <div class="incident-timeline">
+
+        {% for item in timeline %}
+
+          {% set event_label = item.type %}
+
+          {% if item.type == "ALERT" %}
+            {% set event_label = "ALERTA" %}
+          {% elif item.type == "EVIDENCE" %}
+            {% set event_label = "EVIDENCIA" %}
+          {% elif item.type == "GATE" %}
+            {% set event_label = "DECISIÓN" %}
+          {% elif item.type == "UPDATE" %}
+            {% set event_label = "ACTUALIZACIÓN" %}
+          {% endif %}
+
+
+          <article
+            class="
+              timeline-event
+              event-{{ item.type|lower }}
+              {% if item.type == 'GATE' and item.gate_status == 'PENDING' %}
+                event-pending
+              {% endif %}
+            "
+          >
+
+            <div class="timeline-node"></div>
+
+
+            <div class="timeline-event-header">
+
+              <div class="event-heading">
+
+                <span
+                  class="
+                    event-badge
+                    badge-{{ item.type|lower }}
+                  "
+                >
+                  {{ event_label }}
+                </span>
+
+                <span class="event-time">
+
+                  {% if item.display_t_min < 1 %}
+                    {{ (item.display_t_min * 60)|round|int }} s
+                  {% else %}
+                    {{ item.display_t_min|round(1) }} min
+                  {% endif %}
+
+                  desde inicio
+
+                </span>
+
+              </div>
+
+              {% if item.type == "GATE" %}
+
+                {% if item.gate_status == "DONE" %}
+                  <span class="decision-state done">
+                    RESUELTA
+                  </span>
+
+                {% elif item.gate_status == "PENDING" %}
+                  <span class="decision-state pending">
+                    REQUIERE ACCIÓN
+                  </span>
+
+                {% elif item.gate_status == "LOCKED" %}
+                  <span class="decision-state locked">
+                    BLOQUEADA
+                  </span>
+                {% endif %}
+
+              {% endif %}
+
+            </div>
+
+
+            <h3 class="event-title">
+              {{ item.title }}
+            </h3>
+
+
+            {% if item.body %}
+
+              <p class="event-description">
+                {{ item.body }}
+              </p>
+
+            {% endif %}
+
+
+            <!-- ==========================================
+                 EVIDENCIA TÉCNICA
+                 ========================================== -->
+
+            {% if item.telemetry %}
+
+              <details class="evidence-drawer">
+
+                <summary>
+                  <span>
+                    Evidencia técnica
+                  </span>
+
+                  <span class="evidence-status">
+                    {{ item.telemetry.status }}
+                  </span>
+                </summary>
+
+
+                <div class="evidence-content">
+
+                  <div class="detector-grid">
+
+                    <div class="detector-stat">
+                      <span>Estado detector</span>
+                      <strong>
+                        {{ item.telemetry.status }}
+                      </strong>
+                    </div>
+
+                    <div class="detector-stat">
+                      <span>Ventana</span>
+                      <strong>
+                        {{ item.telemetry.window_minutes }} min
+                      </strong>
+                    </div>
+
+                    <div class="detector-stat">
+                      <span>Eventos analizados</span>
+                      <strong>
+                        {{ item.telemetry.events_analyzed }}
+                      </strong>
+                    </div>
+
+
+                    {% if item.telemetry.failure_threshold is defined %}
+
+                      <div class="detector-stat">
+                        <span>Umbral</span>
+                        <strong>
+                          {{ item.telemetry.failure_threshold }}
+                        </strong>
+                      </div>
+
+                      <div class="detector-stat">
+                        <span>Fallos de autenticación</span>
+                        <strong>
+                          {{ item.telemetry.login_failures }}
+                        </strong>
+                      </div>
+
+                      <div class="detector-stat">
+                        <span>Accesos correctos</span>
+                        <strong>
+                          {{ item.telemetry.login_successes }}
+                        </strong>
+                      </div>
+
+                    {% endif %}
+
+
+                    {% if item.telemetry.compromise_count is defined %}
+
+                      <div class="detector-stat critical">
+                        <span>Compromisos</span>
+                        <strong>
+                          {{ item.telemetry.compromise_count }}
+                        </strong>
+                      </div>
+
+                    {% endif %}
+
+
+                    {% if item.telemetry.tampering_count is defined %}
+
+                      <div class="detector-stat critical">
+                        <span>Alteraciones</span>
+                        <strong>
+                          {{ item.telemetry.tampering_count }}
+                        </strong>
+                      </div>
+
+                    {% endif %}
+
+                  </div>
+
+
+                  {% if item.telemetry.message is defined %}
+
+                    <div class="detector-message">
+                      {{ item.telemetry.message }}
+                    </div>
+
+                  {% endif %}
+
+
+                  <div class="evidence-table-wrapper">
+
+                    <table class="evidence-table">
+
+                      <thead>
+                        <tr>
+                          <th>Timestamp</th>
+                          <th>Evento</th>
+                          <th>IP origen</th>
+                          <th>Método</th>
+                          <th>Ruta</th>
+                          <th>Usuario</th>
+                          <th>Estado</th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+
+                        {% for event in item.telemetry.recent_events %}
+
+                          <tr>
+
+                            <td>
+                              {{ event.timestamp }}
+                            </td>
+
+                            <td>
+                              {{ event.event_type }}
+                            </td>
+
+                            <td>
+                              {{ event.source_ip }}
+                            </td>
+
+                            <td>
+                              {{ event.method }}
+                            </td>
+
+                            <td>
+                              {{ event.path }}
+                            </td>
+
+                            <td>
+                              {{ event.username or "-" }}
+                            </td>
+
+                            <td>
+                              {{ event.status }}
+                            </td>
+
+                          </tr>
+
+                        {% endfor %}
+
+                      </tbody>
+
+                    </table>
+
+                  </div>
+
+                </div>
+
+              </details>
+
+            {% endif %}
+
+
+            <!-- ==========================================
+                 GATES
+                 ========================================== -->
+
+            {% if item.type == "GATE" %}
+
+              {% if item.gate_status == "LOCKED" %}
+
+                <div class="gate-message locked">
+
+                  <span>
+                    Decisión todavía no habilitada.
+                  </span>
+
+                  {% if item.remaining_min > 0 %}
+                    <small>
+                      Disponible aproximadamente en
+                      {{ item.remaining_min|round(1) }} min.
+                    </small>
+                  {% endif %}
+
+                </div>
+
+
+              {% elif item.gate_status == "PENDING" %}
+
+                <div class="gate-action">
+
+                  <div>
+
+                    <span class="gate-role">
+                      Responsable:
+                      {{ item.role_required }}
+                    </span>
+
+                    <strong>
+                      Decisión requerida
+                    </strong>
+
+                  </div>
+
+                  <a
+                    class="console-button primary"
+                    href="/session/{{ session.id }}/gate/{{ item.id }}"
+                  >
+                    Abrir decisión
+                  </a>
+
+                </div>
+
+
+              {% elif item.gate_status == "DONE" %}
+
+                <div class="decision-result">
+
+                  <span>
+                    Decisión registrada
+                  </span>
+
+                  <strong>
+                    {{ item.decision.option_key }}
+                  </strong>
+
+                </div>
+
+              {% endif %}
+
+            {% endif %}
+
+          </article>
+
+        {% endfor %}
+
+      </div>
+
+    </section>
+
+
+    <!-- ==================================================
+         PANEL DERECHO - PERFORMANCE
+         ================================================== -->
+
+    <aside class="performance-sidebar">
+
+      <section class="console-panel performance-panel">
+
+        <div class="panel-heading">
+          <span class="panel-kicker">
+            PERFORMANCE
+          </span>
+
+          <h2>
+            Evaluación
+          </h2>
+        </div>
+
+
+        <div class="score-display">
+
+          <span>
+            SCORE
+          </span>
+
+          <strong>
+            {{ score.total }}
+          </strong>
+
+          <small>
+            {{ score.level }}
+          </small>
+
+        </div>
+
+
+        <div class="metric-stack">
+
+          <div class="metric-card">
+
+            <span>
+              TTD
+            </span>
+
+            <strong>
+              {% if score.metrics.TTD_min is not none %}
+                {{ score.metrics.TTD_min }} min
+              {% else %}
+                —
+              {% endif %}
+            </strong>
+
+            <small>
+              Time To Detect
+            </small>
+
+          </div>
+
+
+          <div class="metric-card">
+
+            <span>
+              TTE
+            </span>
+
+            <strong>
+              {% if score.metrics.TTE_min is not none %}
+                {{ score.metrics.TTE_min }} min
+              {% else %}
+                —
+              {% endif %}
+            </strong>
+
+            <small>
+              Time To Escalate
+            </small>
+
+          </div>
+
+
+          <div class="metric-card">
+
+            <span>
+              TTC
+            </span>
+
+            <strong>
+              {% if score.metrics.TTC_min is not none %}
+                {{ score.metrics.TTC_min }} min
+              {% else %}
+                —
+              {% endif %}
+            </strong>
+
+            <small>
+              Time To Contain
+            </small>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <section class="console-panel">
+
+        <div class="panel-heading">
+          <span class="panel-kicker">
+            DECISION LOG
+          </span>
+
+          <h2>
+            Resumen
+          </h2>
+        </div>
+
+
+        {% if score.breakdown %}
+
+          <div class="decision-log">
+
+            {% for decision in score.breakdown %}
+
+              <div class="decision-log-item">
+
+                <div>
+                  <span>
+                    {{ decision.gate_id }}
+                  </span>
+
+                  <strong>
+                    {{ decision.option_key }}
+                  </strong>
+                </div>
+
+                <div class="decision-score">
+                  {{ decision.final_score }}
+                </div>
+
+              </div>
+
+            {% endfor %}
+
+          </div>
+
+
+          <details class="score-details">
+
+            <summary>
+              Ver evaluación detallada
+            </summary>
+
+            <div class="score-table-wrapper">
+
+              <table>
+
+                <thead>
+                  <tr>
+                    <th>Gate</th>
+                    <th>Rol</th>
+                    <th>Decisión</th>
+                    <th>Tiempo</th>
+                    <th>Objetivo</th>
+                    <th>Final</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+
+                  {% for item in score.breakdown %}
+
+                    <tr>
+
+                      <td>
+                        {{ item.gate_id }}
+                      </td>
+
+                      <td>
+                        {{ item.role }}
+                      </td>
+
+                      <td>
+                        {{ item.option_key }}
+                      </td>
+
+                      <td>
+                        {{ item.elapsed_min }} min
+                      </td>
+
+                      <td>
+                        {{ item.expected_min }} min
+                      </td>
+
+                      <td>
+                        {{ item.final_score }}
+                      </td>
+
+                    </tr>
+
+                  {% endfor %}
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+          </details>
+
+        {% else %}
+
+          <p class="empty-state">
+            Las decisiones evaluables aparecerán aquí
+            durante el desarrollo del incidente.
+          </p>
+
+        {% endif %}
+
+      </section>
+
+    </aside>
+
+  </main>
+
+</body>
+</html>

@@ -1,0 +1,301 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="/static/styles.css" />
+  <title>CyberRangeCore · Nueva misión</title>
+</head>
+
+<body class="setup-console-page">
+
+  <header class="console-topbar">
+
+    <div class="console-brand">
+
+      <span class="brand-mark">
+        CR
+      </span>
+
+      <div>
+        <strong>CyberRangeCore</strong>
+        <small>MISSION SETUP</small>
+      </div>
+
+    </div>
+
+    <div class="topbar-status">
+      <span class="status-dot running"></span>
+      PREPARACIÓN
+    </div>
+
+  </header>
+
+
+  <main class="setup-layout">
+
+    <aside class="setup-sidebar">
+
+      <span class="panel-kicker">
+        SESSION SETUP
+      </span>
+
+      <h1>
+        Preparar misión
+      </h1>
+
+      <p>
+        Seleccione el escenario y asigne
+        los participantes que asumirán los
+        roles operativos durante el ejercicio.
+      </p>
+
+
+      <div class="setup-flow">
+
+        <div class="setup-flow-item active">
+          <span>01</span>
+
+          <div>
+            <strong>Escenario</strong>
+            <small>Seleccione la misión.</small>
+          </div>
+        </div>
+
+
+        <div class="setup-flow-item">
+          <span>02</span>
+
+          <div>
+            <strong>Operadores</strong>
+            <small>Asigne los roles CSIRT.</small>
+          </div>
+        </div>
+
+
+        <div class="setup-flow-item">
+          <span>03</span>
+
+          <div>
+            <strong>Despliegue</strong>
+            <small>Inicie la sesión.</small>
+          </div>
+        </div>
+
+      </div>
+
+
+      <a
+        class="console-back-link"
+        href="/"
+      >
+        ← Cancelar preparación
+      </a>
+
+    </aside>
+
+
+    <section class="setup-workspace">
+
+      <div class="section-header">
+
+        <div>
+
+          <span class="panel-kicker">
+            NEW TRAINING SESSION
+          </span>
+
+          <h2>
+            Configuración operativa
+          </h2>
+
+        </div>
+
+      </div>
+
+
+      <form
+        class="setup-form"
+        method="post"
+        action="/session/new"
+      >
+
+        <section class="setup-form-section">
+
+          <div class="form-section-heading">
+
+            <span class="step-number">
+              01
+            </span>
+
+            <div>
+
+              <span class="panel-kicker">
+                MISSION
+              </span>
+
+              <h2>
+                Seleccione el escenario
+              </h2>
+
+            </div>
+
+          </div>
+
+
+          <label for="scenario_id">
+            Escenario disponible
+          </label>
+
+          <select
+            id="scenario_id"
+            name="scenario_id"
+            required
+          >
+
+            {% for s in scenarios %}
+
+              <option value="{{ s.id }}">
+                {{ s.id }} — {{ s.name }}
+              </option>
+
+            {% endfor %}
+
+          </select>
+
+        </section>
+
+
+        <section class="setup-form-section">
+
+          <div class="form-section-heading">
+
+            <span class="step-number">
+              02
+            </span>
+
+            <div>
+
+              <span class="panel-kicker">
+                OPERATORS
+              </span>
+
+              <h2>
+                Asignación de roles
+              </h2>
+
+            </div>
+
+          </div>
+
+
+          <div class="role-input-grid">
+
+            <div class="role-input-card">
+
+              <div class="operator-icon">
+                SOC
+              </div>
+
+              <div class="role-input-content">
+
+                <span class="operator-role">
+                  SOC ANALYST
+                </span>
+
+                <label for="soc_name">
+                  Nombre del participante
+                </label>
+
+                <input
+                  id="soc_name"
+                  name="soc_name"
+                  required
+                  autocomplete="off"
+                  placeholder="Ej. Analista SOC"
+                />
+
+                <small>
+                  Responsable de análisis,
+                  clasificación y escalamiento.
+                </small>
+
+              </div>
+
+            </div>
+
+
+            <div class="role-input-card">
+
+              <div class="operator-icon">
+                IR
+              </div>
+
+              <div class="role-input-content">
+
+                <span class="operator-role">
+                  IR LEAD
+                </span>
+
+                <label for="ir_name">
+                  Nombre del participante
+                </label>
+
+                <input
+                  id="ir_name"
+                  name="ir_name"
+                  required
+                  autocomplete="off"
+                  placeholder="Ej. Líder de respuesta"
+                />
+
+                <small>
+                  Responsable de coordinación
+                  y respuesta técnica al incidente.
+                </small>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
+
+
+        <section class="setup-launch-section">
+
+          <div>
+
+            <span class="panel-kicker">
+              READY
+            </span>
+
+            <strong>
+              La sesión comenzará inmediatamente.
+            </strong>
+
+            <small>
+              La telemetría y métricas se registrarán
+              automáticamente desde el inicio.
+            </small>
+
+          </div>
+
+
+          <button
+            class="console-button primary setup-launch-button"
+            type="submit"
+          >
+            Iniciar entrenamiento
+          </button>
+
+        </section>
+
+      </form>
+
+    </section>
+
+  </main>
+
+</body>
+</html>

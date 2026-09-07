@@ -1,0 +1,318 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="/static/styles.css" />
+  <title>CyberRangeCore · {{ gate.id }}</title>
+</head>
+
+<body class="gate-console-page">
+
+  <header class="console-topbar">
+
+    <div class="console-brand">
+
+      <span class="brand-mark">
+        CR
+      </span>
+
+      <div>
+        <strong>CyberRangeCore</strong>
+        <small>DECISION CONSOLE</small>
+      </div>
+
+    </div>
+
+
+    <div class="console-session-meta">
+
+      <div class="topbar-item">
+        <span>SESIÓN</span>
+        <strong>#{{ session_id }}</strong>
+      </div>
+
+      <div class="topbar-item">
+        <span>GATE</span>
+        <strong>{{ gate.id }}</strong>
+      </div>
+
+      <div class="topbar-status">
+
+        <span class="status-dot running"></span>
+
+        DECISIÓN ACTIVA
+
+      </div>
+
+    </div>
+
+  </header>
+
+
+  <main class="gate-console-layout">
+
+    <!-- ==================================================
+         CONTEXTO
+         ================================================== -->
+
+    <aside class="gate-context">
+
+      <section class="console-panel">
+
+        <div class="panel-heading">
+
+          <span class="panel-kicker">
+            RESPONSABLE
+          </span>
+
+          <h2>
+            Rol operativo
+          </h2>
+
+        </div>
+
+
+        <div class="operator-card">
+
+          <div class="operator-icon">
+            {% if gate.role_required == "IR_LEAD" %}
+              IR
+            {% else %}
+              SOC
+            {% endif %}
+          </div>
+
+          <div>
+
+            <span class="operator-role">
+              ROL REQUERIDO
+            </span>
+
+            <strong>
+              {{ gate.role_required }}
+            </strong>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <section class="console-panel">
+
+        <div class="panel-heading">
+
+          <span class="panel-kicker">
+            PROTOCOLO
+          </span>
+
+          <h2>
+            Instrucciones
+          </h2>
+
+        </div>
+
+        <p class="sidebar-copy">
+          Revise la evidencia disponible antes de tomar
+          una decisión. La selección y su justificación
+          quedarán registradas como parte de la evaluación.
+        </p>
+
+        <div class="gate-warning">
+
+          <span>
+            IMPORTANTE
+          </span>
+
+          <p>
+            Una vez confirmada, la decisión no puede
+            modificarse durante esta sesión.
+          </p>
+
+        </div>
+
+      </section>
+
+
+      <a
+        class="console-back-link"
+        href="/session/{{ session_id }}"
+      >
+        ← Volver al incidente
+      </a>
+
+    </aside>
+
+
+    <!-- ==================================================
+         DECISIÓN
+         ================================================== -->
+
+    <section class="gate-workspace">
+
+      <div class="section-header">
+
+        <div>
+
+          <span class="panel-kicker">
+            DECISION POINT
+          </span>
+
+          <h1>
+            {{ gate.title }}
+          </h1>
+
+        </div>
+
+        <span class="decision-state pending">
+          REQUIERE ACCIÓN
+        </span>
+
+      </div>
+
+
+      <section class="decision-question-card">
+
+        <span class="question-label">
+          PREGUNTA OPERATIVA
+        </span>
+
+        <h2>
+          {{ gate.question }}
+        </h2>
+
+      </section>
+
+
+      <form
+        class="decision-form"
+        method="post"
+        action="/session/{{ session_id }}/gate/{{ gate.id }}"
+      >
+
+        <div class="decision-form-section">
+
+          <div class="form-section-heading">
+
+            <span class="step-number">
+              01
+            </span>
+
+            <div>
+
+              <span class="panel-kicker">
+                ACCIÓN
+              </span>
+
+              <h2>
+                Seleccione una respuesta
+              </h2>
+
+            </div>
+
+          </div>
+
+
+          <div class="decision-options">
+
+            {% for op in gate.options %}
+
+              <label class="decision-option">
+
+                <input
+                  type="radio"
+                  name="option_key"
+                  value="{{ op.key }}"
+                  required
+                />
+
+                <span class="option-radio"></span>
+
+                <span class="option-content">
+
+                  <strong>
+                    {{ op.label }}
+                  </strong>
+
+                  <small>
+                    {{ op.outcome }}
+                  </small>
+
+                </span>
+
+              </label>
+
+            {% endfor %}
+
+          </div>
+
+        </div>
+
+
+        <div class="decision-form-section">
+
+          <div class="form-section-heading">
+
+            <span class="step-number">
+              02
+            </span>
+
+            <div>
+
+              <span class="panel-kicker">
+                RAZONAMIENTO
+              </span>
+
+              <h2>
+                Justifique la decisión
+              </h2>
+
+            </div>
+
+          </div>
+
+
+          <p class="decision-help">
+            Describa brevemente la evidencia observada
+            y el criterio utilizado para seleccionar
+            esta acción.
+          </p>
+
+
+          <textarea
+            name="justification"
+            rows="6"
+            required
+            placeholder="Ejemplo: La evidencia técnica muestra..."
+          ></textarea>
+
+        </div>
+
+
+        <div class="decision-submit-area">
+
+          <a
+            class="console-button ghost"
+            href="/session/{{ session_id }}"
+          >
+            Cancelar
+          </a>
+
+          <button
+            class="console-button primary decision-confirm"
+            type="submit"
+          >
+            Confirmar decisión
+          </button>
+
+        </div>
+
+      </form>
+
+    </section>
+
+  </main>
+
+</body>
+</html>

@@ -1,0 +1,335 @@
+id: CR-002
+
+name: "Modificación no autorizada de información académica"
+
+description: >
+  Escenario de entrenamiento orientado a la detección,
+  clasificación y respuesta ante una alteración no autorizada
+  de información académica, integrando evidencia técnica,
+  toma de decisiones CSIRT y acciones reales de recuperación
+  y protección.
+
+roles:
+  - SOC_ANALYST
+  - IR_LEAD
+
+metrics:
+  - TTD
+  - TTE
+  - TTC
+
+injects:
+
+  # ==================================================
+  # FASE 1 - DETECCIÓN DE ALTERACIÓN
+  # ==================================================
+
+  - id: INJ-001
+    t_min: 0
+    type: ALERT
+    title: "Alerta de integridad de información"
+    body: >
+      El sistema detectó una modificación no autorizada
+      sobre un registro académico del portal institucional.
+
+    telemetry_condition:
+      detector: DATA_INTEGRITY
+      expected_status: TAMPERED
+      window_minutes: 10
+
+  - id: INJ-002
+    t_min: 0
+    type: EVIDENCE
+    title: "Evidencia de alteración académica"
+    body: >
+      La telemetría registra una modificación del valor
+      almacenado sin evidencia de una operación
+      administrativa autorizada.
+
+    telemetry_condition:
+      detector: DATA_INTEGRITY
+      expected_status: TAMPERED
+      window_minutes: 10
+
+  # ==================================================
+  # FASE 2 - CLASIFICACIÓN
+  # ==================================================
+
+  - id: GATE-000
+    t_min: 0
+    type: GATE
+    title: "Decisión 0: Clasificación del evento"
+    question: >
+      ¿Cómo clasifica la modificación detectada?
+    role_required: SOC_ANALYST
+
+    telemetry_condition:
+      detector: DATA_INTEGRITY
+      expected_status: TAMPERED
+      window_minutes: 10
+
+    options:
+
+      - key: CONFIRMAR
+        label: "Confirmar incidente de integridad"
+        score: 10
+        outcome: >
+          Se reconoce una alteración no autorizada
+          que requiere respuesta formal.
+
+      - key: SOSPECHOSO
+        label: "Mantener bajo investigación"
+        score: 4
+        outcome: >
+          Se retrasa la declaración formal mientras
+          se recopila evidencia adicional.
+
+      - key: DESCARTAR
+        label: "Descartar como cambio legítimo"
+        score: -10
+        outcome: >
+          La alteración no es tratada como incidente
+          y permanece sin respuesta formal.
+
+  - id: INJ-002B
+    t_min: 0
+    type: UPDATE
+    title: "Alteración pendiente de clasificación"
+    body: >
+      El registro permanece modificado mientras el evento
+      continúa bajo investigación sin ser declarado
+      formalmente como incidente de integridad.
+
+    condition:
+      gate_id: GATE-000
+      option: SOSPECHOSO
+
+  - id: INJ-002C
+    t_min: 0
+    type: ALERT
+    title: "Alteración descartada sin respuesta"
+    body: >
+      La modificación fue considerada legítima y no se
+      activa el proceso formal de respuesta. El registro
+      permanece alterado.
+
+    condition:
+      gate_id: GATE-000
+      option: DESCARTAR
+
+  # ==================================================
+  # FASE 3 - ESCALAMIENTO
+  # ==================================================
+
+  - id: GATE-001
+    t_min: 0
+    type: GATE
+    title: "Decisión 1: Escalamiento"
+    question: >
+      ¿Escala el incidente de integridad al Líder IR?
+    role_required: SOC_ANALYST
+
+    condition:
+      gate_id: GATE-000
+      option: CONFIRMAR
+
+    options:
+
+      - key: ESCALAR
+        label: "Escalar inmediatamente"
+        score: 10
+        outcome: >
+          Se activa la coordinación con el Líder IR
+          para responder a la alteración.
+
+      - key: MONITOREAR
+        label: "Monitorear sin escalar"
+        score: 4
+        outcome: >
+          Se mantiene observación sin activar
+          coordinación formal de respuesta.
+
+      - key: IGNORAR
+        label: "No escalar"
+        score: -10
+        outcome: >
+          La alteración permanece sin una respuesta
+          coordinada del equipo IR.
+
+  - id: INJ-003A
+    t_min: 0
+    type: UPDATE
+    title: "Respuesta de integridad activada"
+    body: >
+      El Líder IR recibe el escalamiento y comienza
+      la evaluación de medidas para recuperar y proteger
+      la información académica afectada.
+
+    condition:
+      gate_id: GATE-001
+      option: ESCALAR
+
+  - id: INJ-003B
+    t_min: 0
+    type: EVIDENCE
+    title: "Alteración persistente bajo monitoreo"
+    body: >
+      El SOC continúa observando el incidente sin escalarlo.
+      El registro académico permanece modificado mientras
+      no existe coordinación formal con el Líder IR.
+
+    condition:
+      gate_id: GATE-001
+      option: MONITOREAR
+
+  - id: INJ-003C
+    t_min: 0
+    type: ALERT
+    title: "Incidente de integridad sin escalamiento"
+    body: >
+      La alteración confirmada no fue escalada.
+      La información académica permanece comprometida
+      y no se han aplicado acciones de recuperación.
+
+    condition:
+      gate_id: GATE-001
+      option: IGNORAR
+
+  # ==================================================
+  # FASE 4 - CONFIRMACIÓN PERSISTENTE
+  # ==================================================
+
+  - id: INJ-004
+    t_min: 0
+    type: ALERT
+    title: "Alteración confirmada"
+    body: >
+      La evidencia técnica previamente registrada confirma
+      que el registro académico fue modificado sin autorización.
+      El incidente requiere una medida de respuesta para
+      preservar la integridad de la información.
+
+    condition:
+      gate_id: GATE-001
+      option: ESCALAR
+
+    release_after:
+      inject_id: INJ-001
+      delay_min: 0
+
+  # ==================================================
+  # FASE 5 - RESPUESTA DE INTEGRIDAD
+  # ==================================================
+
+  - id: GATE-002
+    t_min: 0
+    type: GATE
+    title: "Decisión 2: Respuesta de integridad"
+    question: >
+      ¿Qué medida autoriza para responder a la
+      modificación no autorizada?
+    role_required: IR_LEAD
+
+    condition:
+      gate_id: GATE-001
+      option: ESCALAR
+
+    release_after:
+      inject_id: INJ-004
+      delay_min: 0
+
+    options:
+
+      - key: RESTAURAR
+        label: "Restaurar información y proteger edición"
+        score: 10
+        outcome: >
+          Se recupera el valor legítimo y se protege
+          la edición frente a nuevas modificaciones
+          no autorizadas.
+
+      - key: AISLAR
+        label: "Aislar temporalmente el módulo"
+        score: 5
+        outcome: >
+          Se impide temporalmente la modificación de
+          registros, reduciendo exposición con impacto
+          sobre la disponibilidad.
+
+      - key: NO_ACTUAR
+        label: "No actuar"
+        score: -10
+        outcome: >
+          La modificación permanece y el recurso
+          continúa expuesto.
+
+  # ==================================================
+  # FASE 6 - CONSECUENCIAS
+  # ==================================================
+
+  - id: INJ-005A
+    t_min: 0
+    type: UPDATE
+    title: "Información restaurada y protegida"
+    body: >
+      El valor académico legítimo fue restaurado y la
+      edición no autorizada quedó bloqueada. El sistema
+      preserva nuevamente la integridad del registro.
+
+    condition:
+      gate_id: GATE-002
+      option: RESTAURAR
+
+  - id: INJ-005B
+    t_min: 0
+    type: UPDATE
+    title: "Módulo académico aislado"
+    body: >
+      La edición de registros académicos fue aislada
+      temporalmente. Se reduce la exposición mientras
+      se afecta parcialmente la disponibilidad.
+
+    condition:
+      gate_id: GATE-002
+      option: AISLAR
+
+  - id: INJ-005C
+    t_min: 0
+    type: ALERT
+    title: "Alteración permanece sin respuesta"
+    body: >
+      No se aplicaron medidas de recuperación ni
+      protección. La información permanece expuesta
+      a nuevas modificaciones no autorizadas.
+
+    condition:
+      gate_id: GATE-002
+      option: NO_ACTUAR
+
+evaluation:
+
+  delay_penalty_per_min: 1
+
+  expected_response_min:
+    GATE-000: 2
+    GATE-001: 2
+    GATE-002: 5
+
+  weights:
+    GATE-000: 1.0
+    GATE-001: 1.0
+    GATE-002: 1.0
+
+  performance_levels:
+
+    - name: "Bajo"
+      min_score: -999
+      max_score: 10
+
+    - name: "Medio"
+      min_score: 11
+      max_score: 22
+
+    - name: "Alto"
+      min_score: 23
+      max_score: 30

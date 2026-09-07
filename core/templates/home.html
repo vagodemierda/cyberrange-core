@@ -1,0 +1,246 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="/static/styles.css" />
+  <title>CyberRangeCore</title>
+</head>
+
+<body class="home-console-page">
+
+  <header class="console-topbar">
+
+    <div class="console-brand">
+
+      <span class="brand-mark">
+        CR
+      </span>
+
+      <div>
+        <strong>CyberRangeCore</strong>
+        <small>CSIRT TRAINING ENVIRONMENT</small>
+      </div>
+
+    </div>
+
+    <div class="topbar-status">
+      <span class="status-dot running"></span>
+      SYSTEM READY
+    </div>
+
+  </header>
+
+
+  <main class="home-layout">
+
+    <section class="home-hero">
+
+      <div class="home-hero-copy">
+
+        <span class="panel-kicker">
+          CYBER INCIDENT TRAINING PLATFORM
+        </span>
+
+        <h1>
+          Entrenamiento técnico y estratégico
+          para equipos CSIRT
+        </h1>
+
+        <p>
+          Entorno de simulación orientado a la detección,
+          análisis, escalamiento y respuesta ante incidentes
+          de ciberseguridad mediante evidencia técnica,
+          toma de decisiones y evaluación temporal.
+        </p>
+
+        <div class="home-actions">
+
+          <a
+            class="console-button primary home-primary-action"
+            href="/session/new"
+          >
+            Iniciar nueva misión
+          </a>
+
+        </div>
+
+      </div>
+
+
+      <div class="home-system-panel">
+
+        <span class="panel-kicker">
+          CORE STATUS
+        </span>
+
+        <div class="system-status-row">
+          <span>Motor de escenarios</span>
+          <strong>ONLINE</strong>
+        </div>
+
+        <div class="system-status-row">
+          <span>Telemetría</span>
+          <strong>READY</strong>
+        </div>
+
+        <div class="system-status-row">
+          <span>Motor de evaluación</span>
+          <strong>READY</strong>
+        </div>
+
+        <div class="system-status-row">
+          <span>Decision Gates</span>
+          <strong>ACTIVE</strong>
+        </div>
+
+        <div class="system-divider"></div>
+
+        <small>
+          CyberRangeCore · Training Core
+        </small>
+
+      </div>
+
+    </section>
+
+
+    <section class="scenario-catalog">
+
+      <div class="section-header">
+
+        <div>
+
+          <span class="panel-kicker">
+            SCENARIO LIBRARY
+          </span>
+
+          <h2>
+            Misiones disponibles
+          </h2>
+
+        </div>
+
+        <span class="scenario-count">
+          {{ scenarios|length }} escenarios
+        </span>
+
+      </div>
+
+
+      <div class="scenario-grid">
+
+        {% for s in scenarios %}
+
+          <article class="scenario-card">
+
+            <div class="scenario-card-top">
+
+              <span class="scenario-code">
+                {{ s.id }}
+              </span>
+
+              <span class="scenario-ready">
+                READY
+              </span>
+
+            </div>
+
+
+            <h3>
+              {{ s.name }}
+            </h3>
+
+
+            <p>
+              Escenario operativo de entrenamiento
+              CyberRangeCore.
+            </p>
+
+
+            <div class="scenario-card-footer">
+
+              <a
+                href="/scenario/{{ s.id }}"
+                class="scenario-details-link"
+              >
+                Ver briefing →
+              </a>
+
+            </div>
+
+          </article>
+
+        {% endfor %}
+
+      </div>
+
+    </section>
+
+
+    <section class="home-capabilities">
+
+      <div class="capability-item">
+
+        <span>
+          01
+        </span>
+
+        <div>
+          <strong>
+            Telemetría real
+          </strong>
+
+          <small>
+            Los escenarios reaccionan a eventos
+            técnicos generados en el laboratorio.
+          </small>
+        </div>
+
+      </div>
+
+
+      <div class="capability-item">
+
+        <span>
+          02
+        </span>
+
+        <div>
+          <strong>
+            Decisiones por rol
+          </strong>
+
+          <small>
+            SOC Analyst e IR Lead intervienen
+            en diferentes momentos del incidente.
+          </small>
+        </div>
+
+      </div>
+
+
+      <div class="capability-item">
+
+        <span>
+          03
+        </span>
+
+        <div>
+          <strong>
+            Evaluación
+          </strong>
+
+          <small>
+            TTD, TTE, TTC, puntuación
+            y retroalimentación automática.
+          </small>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+</body>
+</html>

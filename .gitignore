@@ -1,0 +1,43 @@
+# ==========================================================
+# PYTHON
+# ==========================================================
+
+.venv/
+__pycache__/
+*.py[cod]
+
+
+# ==========================================================
+# DATOS GENERADOS EN EJECUCIÓN
+# ==========================================================
+
+data/cyberrange.db
+data/cyberrange.db-*
+data/containment_state.json
+data/integrity_state.json
+
+target_app/data/portal.db
+target_app/data/portal.db-*
+target_app/logs/events.jsonl
+
+
+# ==========================================================
+# BACKUPS LOCALES
+# ==========================================================
+
+backups/
+target_app.before_sqli/
+
+*.before_*
+*.backup
+*.CR001_ACCEPTED
+*.CR002_ACCEPTED
+
+
+# ==========================================================
+# SISTEMA / EDITORES
+# ==========================================================
+
+.DS_Store
+*.swp
+*~

@@ -1,0 +1,591 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="/static/styles.css" />
+
+  <title>
+    CyberRangeCore · Reporte sesión {{ session.id }}
+  </title>
+</head>
+
+<body class="report-console-page">
+
+  <header class="console-topbar">
+
+    <div class="console-brand">
+
+      <span class="brand-mark">
+        CR
+      </span>
+
+      <div>
+        <strong>CyberRangeCore</strong>
+        <small>AFTER ACTION REPORT</small>
+      </div>
+
+    </div>
+
+
+    <div class="console-session-meta">
+
+      <div class="topbar-item">
+        <span>ESCENARIO</span>
+        <strong>{{ session.scenario_id }}</strong>
+      </div>
+
+      <div class="topbar-item">
+        <span>SESIÓN</span>
+        <strong>#{{ session.id }}</strong>
+      </div>
+
+      <div class="topbar-status">
+        <span class="status-dot finished"></span>
+        FINALIZADA
+      </div>
+
+    </div>
+
+  </header>
+
+
+  <main class="report-layout">
+
+    <!-- ==================================================
+         HERO / RESULTADO GENERAL
+         ================================================== -->
+
+    <section class="report-hero">
+
+      <div class="report-identity">
+
+        <span class="panel-kicker">
+          MISSION DEBRIEF
+        </span>
+
+        <h1>
+          Resultados del entrenamiento
+        </h1>
+
+        <p>
+          {{ scenario.name }}
+        </p>
+
+
+        <div class="report-participants">
+
+          {% for role, participant in roles.items() %}
+
+            <div>
+
+              <span>
+                {{ role }}
+              </span>
+
+              <strong>
+                {{ participant }}
+              </strong>
+
+            </div>
+
+          {% endfor %}
+
+        </div>
+
+      </div>
+
+
+      <div class="report-score-card">
+
+        <span>
+          PERFORMANCE SCORE
+        </span>
+
+        <strong>
+          {{ score.total }}
+        </strong>
+
+        <div
+          class="
+            report-level
+            {% if score.level == 'Alto' %}
+              high
+            {% elif score.level == 'Medio' %}
+              medium
+            {% else %}
+              low
+            {% endif %}
+          "
+        >
+          {{ score.level }}
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ==================================================
+         MÉTRICAS
+         ================================================== -->
+
+    <section class="report-metrics-grid">
+
+      <article class="report-metric-card">
+
+        <span class="metric-code">
+          TTD
+        </span>
+
+        <strong>
+          {% if score.metrics.TTD_min is not none %}
+            {{ score.metrics.TTD_min }} min
+          {% else %}
+            —
+          {% endif %}
+        </strong>
+
+        <small>
+          Time To Detect
+        </small>
+
+      </article>
+
+
+      <article class="report-metric-card">
+
+        <span class="metric-code">
+          TTE
+        </span>
+
+        <strong>
+          {% if score.metrics.TTE_min is not none %}
+            {{ score.metrics.TTE_min }} min
+          {% else %}
+            —
+          {% endif %}
+        </strong>
+
+        <small>
+          Time To Escalate
+        </small>
+
+      </article>
+
+
+      <article class="report-metric-card">
+
+        <span class="metric-code">
+          TTC
+        </span>
+
+        <strong>
+          {% if score.metrics.TTC_min is not none %}
+            {{ score.metrics.TTC_min }} min
+          {% else %}
+            —
+          {% endif %}
+        </strong>
+
+        <small>
+          Time To Contain
+        </small>
+
+      </article>
+
+    </section>
+
+
+    <!-- ==================================================
+         DECISION PERFORMANCE
+         ================================================== -->
+
+    <section class="report-section">
+
+      <div class="section-header">
+
+        <div>
+
+          <span class="panel-kicker">
+            DECISION PERFORMANCE
+          </span>
+
+          <h2>
+            Rendimiento por punto de decisión
+          </h2>
+
+        </div>
+
+      </div>
+
+
+      {% if decision_details %}
+
+        <div class="report-decision-grid">
+
+          {% for item in decision_details %}
+
+            <article class="report-decision-card">
+
+              <div class="report-decision-top">
+
+                <div>
+
+                  <span>
+                    {{ item.gate_id }}
+                  </span>
+
+                  <strong>
+                    {{ item.option_key }}
+                  </strong>
+
+                </div>
+
+
+                <div class="report-decision-score">
+                  {{ item.final_score }}
+                </div>
+
+              </div>
+
+
+              <div class="report-decision-role">
+                {{ item.role }}
+              </div>
+
+
+              <div class="report-decision-times">
+
+                <div>
+                  <span>TIEMPO</span>
+                  <strong>
+                    {{ item.elapsed_min }} min
+                  </strong>
+                </div>
+
+                <div>
+                  <span>OBJETIVO</span>
+                  <strong>
+                    {{ item.expected_min }} min
+                  </strong>
+                </div>
+
+                <div>
+                  <span>RETRASO</span>
+                  <strong>
+                    {{ item.delay_min }} min
+                  </strong>
+                </div>
+
+              </div>
+
+
+              {% if item.delay_penalty > 0 %}
+
+                <div class="report-penalty">
+                  Penalización temporal:
+                  -{{ item.delay_penalty }}
+                </div>
+
+              {% else %}
+
+                <div class="report-on-time">
+                  Decisión dentro del tiempo objetivo
+                </div>
+
+              {% endif %}
+
+            </article>
+
+          {% endfor %}
+
+        </div>
+
+      {% else %}
+
+        <p class="empty-state">
+          No existen decisiones evaluables registradas.
+        </p>
+
+      {% endif %}
+
+    </section>
+
+
+    <!-- ==================================================
+         ANÁLISIS DE DECISIONES
+         ================================================== -->
+
+    <section class="report-section">
+
+      <div class="section-header">
+
+        <div>
+
+          <span class="panel-kicker">
+            DECISION ANALYSIS
+          </span>
+
+          <h2>
+            Análisis de decisiones
+          </h2>
+
+        </div>
+
+      </div>
+
+
+      <div class="decision-analysis-list">
+
+        {% for item in decision_details %}
+
+          <article class="decision-analysis-card">
+
+            <div class="analysis-card-header">
+
+              <span>
+                {{ item.gate_id }}
+              </span>
+
+              <strong>
+                {{ item.option_key }}
+              </strong>
+
+            </div>
+
+
+            <div class="analysis-block">
+
+              <span class="analysis-label">
+                JUSTIFICACIÓN DEL PARTICIPANTE
+              </span>
+
+              <p>
+                {{ item.justification }}
+              </p>
+
+            </div>
+
+
+            <div class="analysis-block">
+
+              <span class="analysis-label">
+                CONSECUENCIA DE LA DECISIÓN
+              </span>
+
+              <p>
+                {{ item.outcome }}
+              </p>
+
+            </div>
+
+          </article>
+
+        {% endfor %}
+
+      </div>
+
+    </section>
+
+
+    <!-- ==================================================
+         TABLA TÉCNICA
+         ================================================== -->
+
+    <section class="report-section">
+
+      <details class="report-technical-details">
+
+        <summary>
+          Ver desglose técnico de evaluación
+        </summary>
+
+
+        <div class="report-table-wrapper">
+
+          <table>
+
+            <thead>
+
+              <tr>
+                <th>Gate</th>
+                <th>Rol</th>
+                <th>Decisión</th>
+                <th>Base</th>
+                <th>Peso</th>
+                <th>Tiempo</th>
+                <th>Objetivo</th>
+                <th>Retraso</th>
+                <th>Penalización</th>
+                <th>Final</th>
+              </tr>
+
+            </thead>
+
+
+            <tbody>
+
+              {% for item in decision_details %}
+
+                <tr>
+
+                  <td>
+                    {{ item.gate_id }}
+                  </td>
+
+                  <td>
+                    {{ item.role }}
+                  </td>
+
+                  <td>
+                    {{ item.option_key }}
+                  </td>
+
+                  <td>
+                    {{ item.base_score }}
+                  </td>
+
+                  <td>
+                    {{ item.weight }}
+                  </td>
+
+                  <td>
+                    {{ item.elapsed_min }} min
+                  </td>
+
+                  <td>
+                    {{ item.expected_min }} min
+                  </td>
+
+                  <td>
+                    {{ item.delay_min }} min
+                  </td>
+
+                  <td>
+                    {% if item.delay_penalty > 0 %}
+                      -{{ item.delay_penalty }}
+                    {% else %}
+                      0
+                    {% endif %}
+                  </td>
+
+                  <td>
+                    <strong>
+                      {{ item.final_score }}
+                    </strong>
+                  </td>
+
+                </tr>
+
+              {% endfor %}
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </details>
+
+    </section>
+
+
+    <!-- ==================================================
+         RECOMENDACIONES
+         ================================================== -->
+
+    <section class="report-section recommendations-section">
+
+      <div class="section-header">
+
+        <div>
+
+          <span class="panel-kicker">
+            AFTER ACTION REVIEW
+          </span>
+
+          <h2>
+            Orientaciones para fortalecimiento
+          </h2>
+
+        </div>
+
+      </div>
+
+
+      <div class="recommendation-list">
+
+        {% for recommendation in recommendations %}
+
+          <div class="recommendation-item">
+
+            <span>
+              {{ loop.index|string }}
+            </span>
+
+            <p>
+              {{ recommendation }}
+            </p>
+
+          </div>
+
+        {% endfor %}
+
+      </div>
+
+    </section>
+
+
+    <!-- ==================================================
+         NOTA METODOLÓGICA
+         ================================================== -->
+
+    <section class="report-methodology">
+
+      <span class="panel-kicker">
+        METHODOLOGICAL NOTE
+      </span>
+
+      <p>
+        En la versión actual del escenario
+        <strong>{{ session.scenario_id }}</strong>,
+        la clasificación, el escalamiento y la respuesta final
+        se instrumentan como decisiones independientes.
+        TTD, TTE y TTC se calculan a partir de marcas temporales
+        registradas automáticamente por CyberRangeCore desde la
+        liberación efectiva de los eventos correspondientes.
+        Los tiempos objetivo, ponderaciones y rangos de desempeño
+        utilizados corresponden a parámetros del prototipo que
+        deberán ser sometidos a justificación y validación durante
+        la fase experimental del proyecto.
+      </p>
+
+    </section>
+
+
+    <!-- ==================================================
+         ACCIONES
+         ================================================== -->
+
+    <section class="report-actions">
+
+      <a
+        class="console-button ghost"
+        href="/session/{{ session.id }}"
+      >
+        ← Volver a la sesión
+      </a>
+
+      <a
+        class="console-button secondary"
+        href="/"
+      >
+        Ir al inicio
+      </a>
+
+    </section>
+
+  </main>
+
+</body>
+</html>

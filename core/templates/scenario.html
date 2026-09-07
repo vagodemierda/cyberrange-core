@@ -1,0 +1,385 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="/static/styles.css" />
+
+  <title>
+    CyberRangeCore · {{ scenario.id }}
+  </title>
+</head>
+
+<body class="scenario-console-page">
+
+  <header class="console-topbar">
+
+    <div class="console-brand">
+
+      <span class="brand-mark">
+        CR
+      </span>
+
+      <div>
+        <strong>CyberRangeCore</strong>
+        <small>MISSION BRIEFING</small>
+      </div>
+
+    </div>
+
+    <div class="console-session-meta">
+
+      <div class="topbar-item">
+        <span>ESCENARIO</span>
+        <strong>
+          {{ scenario.id }}
+        </strong>
+      </div>
+
+      <div class="topbar-status">
+
+        <span class="status-dot running"></span>
+
+        DISPONIBLE
+
+      </div>
+
+    </div>
+
+  </header>
+
+
+  <main class="mission-layout">
+
+    <!-- ==============================================
+         CABECERA DE MISIÓN
+         ============================================== -->
+
+    <section class="mission-hero">
+
+      <div class="mission-id">
+        {{ scenario.id }}
+      </div>
+
+      <span class="panel-kicker">
+        TRAINING SCENARIO
+      </span>
+
+      <h1>
+        {{ scenario.name }}
+      </h1>
+
+      <p>
+        {{ scenario.description }}
+      </p>
+
+
+      <div class="mission-actions">
+
+        <a
+          class="console-button primary mission-launch"
+          href="/session/new"
+        >
+          Iniciar entrenamiento
+        </a>
+
+        <a
+          class="console-button ghost"
+          href="/"
+        >
+          Volver al inicio
+        </a>
+
+      </div>
+
+    </section>
+
+
+    <!-- ==============================================
+         INFORMACIÓN OPERATIVA
+         ============================================== -->
+
+    <section class="mission-grid">
+
+      <article class="console-panel mission-card">
+
+        <span class="panel-kicker">
+          EQUIPO
+        </span>
+
+        <h2>
+          Roles operativos
+        </h2>
+
+        <div class="mission-role-list">
+
+          {% for role in scenario.roles %}
+
+            <div class="mission-role">
+
+              <span class="mission-role-icon">
+
+                {% if role == "SOC_ANALYST" %}
+                  SOC
+                {% elif role == "IR_LEAD" %}
+                  IR
+                {% else %}
+                  OP
+                {% endif %}
+
+              </span>
+
+              <div>
+
+                <small>
+                  OPERADOR
+                </small>
+
+                <strong>
+                  {{ role }}
+                </strong>
+
+              </div>
+
+            </div>
+
+          {% endfor %}
+
+        </div>
+
+      </article>
+
+
+      <article class="console-panel mission-card">
+
+        <span class="panel-kicker">
+          EVALUACIÓN
+        </span>
+
+        <h2>
+          Métricas de respuesta
+        </h2>
+
+        <div class="mission-metrics">
+
+          {% for metric in scenario.metrics %}
+
+            <div class="mission-metric">
+
+              <strong>
+                {{ metric }}
+              </strong>
+
+              <small>
+
+                {% if metric == "TTD" %}
+                  Time To Detect
+
+                {% elif metric == "TTE" %}
+                  Time To Escalate
+
+                {% elif metric == "TTC" %}
+                  Time To Contain
+
+                {% endif %}
+
+              </small>
+
+            </div>
+
+          {% endfor %}
+
+        </div>
+
+      </article>
+
+
+      <article class="console-panel mission-card">
+
+        <span class="panel-kicker">
+          MODELO
+        </span>
+
+        <h2>
+          Dinámica del ejercicio
+        </h2>
+
+        <div class="mission-feature-list">
+
+          <div>
+            <span>01</span>
+            <p>
+              Evidencia técnica generada
+              por eventos reales.
+            </p>
+          </div>
+
+          <div>
+            <span>02</span>
+            <p>
+              Decisiones diferenciadas
+              por rol CSIRT.
+            </p>
+          </div>
+
+          <div>
+            <span>03</span>
+            <p>
+              Consecuencias determinadas
+              por las decisiones tomadas.
+            </p>
+          </div>
+
+          <div>
+            <span>04</span>
+            <p>
+              Evaluación temporal y
+              retroalimentación final.
+            </p>
+          </div>
+
+        </div>
+
+      </article>
+
+    </section>
+
+
+    <!-- ==============================================
+         FASES DEL ESCENARIO
+         ============================================== -->
+
+    <section class="mission-phases">
+
+      <div class="section-header">
+
+        <div>
+
+          <span class="panel-kicker">
+            INCIDENT LIFECYCLE
+          </span>
+
+          <h2>
+            Fases del entrenamiento
+          </h2>
+
+        </div>
+
+      </div>
+
+
+      <div class="phase-track">
+
+        <div class="phase-card">
+
+          <span>
+            01
+          </span>
+
+          <strong>
+            Detección
+          </strong>
+
+          <small>
+            Identificación de evidencia
+            técnica relevante.
+          </small>
+
+        </div>
+
+
+        <div class="phase-arrow">
+          →
+        </div>
+
+
+        <div class="phase-card">
+
+          <span>
+            02
+          </span>
+
+          <strong>
+            Clasificación
+          </strong>
+
+          <small>
+            Análisis del evento y
+            reconocimiento del incidente.
+          </small>
+
+        </div>
+
+
+        <div class="phase-arrow">
+          →
+        </div>
+
+
+        <div class="phase-card">
+
+          <span>
+            03
+          </span>
+
+          <strong>
+            Escalamiento
+          </strong>
+
+          <small>
+            Coordinación entre
+            SOC e Incident Response.
+          </small>
+
+        </div>
+
+
+        <div class="phase-arrow">
+          →
+        </div>
+
+
+        <div class="phase-card">
+
+          <span>
+            04
+          </span>
+
+          <strong>
+            Respuesta
+          </strong>
+
+          <small>
+            Aplicación de medidas
+            técnicas sobre el incidente.
+          </small>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ==============================================
+         NOTA
+         ============================================== -->
+
+    <section class="mission-classification-note">
+
+      <span class="panel-kicker">
+        TRAINING NOTICE
+      </span>
+
+      <p>
+        Los detalles internos de progresión,
+        ramificación y puntuación permanecen ocultos
+        durante el ejercicio para preservar la toma
+        de decisiones del participante.
+      </p>
+
+    </section>
+
+  </main>
+
+</body>
+</html>
