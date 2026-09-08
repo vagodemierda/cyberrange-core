@@ -1,29 +1,17 @@
 import time
 import json
 
-from integrity_state import (
-    reset_integrity_state,
-    write_integrity_state,
-)
-
-from target_app.init_db import (
-    reset_academic_records,
-    restore_academic_record,
-)
-
-from range_state import (
-    reset_containment_state,
-    write_containment_state,
+from core.actions import (
+    apply_containment_action,
+    apply_integrity_action,
+    execute_gate_action,
+    reset_scenario_runtime,
 )
 
 from core.telemetry import (
     analyze_authentication,
     analyze_compromise,
     analyze_data_integrity,
-)
-
-from target_app.init_db import (
-    reset_academic_records,
 )
 
 from html import escape
@@ -57,240 +45,6 @@ def now() -> float:
 
 def compute_elapsed_min(started_ts: float) -> int:
     return int((now() - started_ts) / 60)
-
-def apply_containment_action(
-    db,
-    session: SessionRun,
-    option_key: str
-) -> tuple[bool, str]:
-
-    # --------------------------------------------------
-    # CONTENCIÓN PARCIAL
-    # --------------------------------------------------
-    # Se identifica la IP asociada al compromiso
-    # confirmado en INJ-004 y se bloquea únicamente
-    # esa fuente, manteniendo disponible el servicio.
-
-    if option_key == "PARCIAL":
-
-        compromise_release = (
-            db.query(InjectRelease)
-            .filter(
-                InjectRelease.session_id
-                == session.id,
-                InjectRelease.inject_id
-                == "INJ-004"
-            )
-            .first()
-        )
-
-        if (
-            not compromise_release
-            or not compromise_release.telemetry_json
-        ):
-            return (
-                False,
-                "No existe evidencia técnica "
-                "persistida para aplicar "
-                "la contención parcial."
-            )
-
-        try:
-            telemetry = json.loads(
-                compromise_release.telemetry_json
-            )
-
-        except (
-            json.JSONDecodeError,
-            TypeError
-        ):
-            return (
-                False,
-                "La evidencia técnica de INJ-004 "
-                "no pudo ser interpretada."
-            )
-
-        source_ip = None
-
-        latest_compromise = (
-            telemetry.get(
-                "latest_compromise"
-            )
-            or {}
-        )
-
-        source_ip = latest_compromise.get(
-            "source_ip"
-        )
-
-        if not source_ip:
-
-            compromise_events = (
-                telemetry.get(
-                    "compromise_events"
-                )
-                or []
-            )
-
-            if compromise_events:
-                source_ip = (
-                    compromise_events[-1]
-                    .get("source_ip")
-                )
-
-        if (
-            not source_ip
-            or source_ip == "unknown"
-        ):
-            return (
-                False,
-                "No fue posible identificar "
-                "la IP origen del compromiso."
-            )
-
-        write_containment_state(
-            session_id=session.id,
-            mode="PARTIAL",
-            blocked_ips=[
-                source_ip
-            ],
-            reason=(
-                "Contención parcial autorizada "
-                f"desde GATE-002. IP bloqueada: "
-                f"{source_ip}"
-            ),
-        )
-
-        return (
-            True,
-            (
-                "Contención parcial aplicada. "
-                f"IP bloqueada: {source_ip}"
-            )
-        )
-
-    # --------------------------------------------------
-    # CONTENCIÓN TOTAL
-    # --------------------------------------------------
-    # Se aísla temporalmente el mecanismo de
-    # autenticación del portal objetivo.
-
-    if option_key == "TOTAL":
-
-        write_containment_state(
-            session_id=session.id,
-            mode="ISOLATED",
-            blocked_ips=[],
-            reason=(
-                "Contención total autorizada "
-                "desde GATE-002. Servicio de "
-                "autenticación aislado."
-            ),
-        )
-
-        return (
-            True,
-            "Servicio de autenticación aislado."
-        )
-
-    # --------------------------------------------------
-    # SIN CONTENCIÓN
-    # --------------------------------------------------
-
-    if option_key == "NO_ACTUAR":
-
-        write_containment_state(
-            session_id=session.id,
-            mode="NONE",
-            blocked_ips=[],
-            reason=(
-                "GATE-002 finalizado sin "
-                "aplicar medidas de contención."
-            ),
-        )
-
-        return (
-            True,
-            "No se aplicaron medidas de contención."
-        )
-
-    return (
-        False,
-        "Opción de contención no reconocida."
-    )
-
-def apply_integrity_action(
-    session: SessionRun,
-    option_key: str
-) -> tuple[bool, str]:
-
-    # --------------------------------------------------
-    # RESTAURAR Y PROTEGER
-    # --------------------------------------------------
-
-    if option_key == "RESTAURAR":
-
-        restore_academic_record()
-
-        write_integrity_state(
-            session_id=session.id,
-            mode="PROTECTED",
-            reason=(
-                "Registro académico restaurado al "
-                "valor legítimo y edición no autorizada "
-                "bloqueada desde GATE-002."
-            ),
-        )
-
-        return (
-            True,
-            "Registro restaurado y protegido."
-        )
-
-    # --------------------------------------------------
-    # AISLAR MÓDULO
-    # --------------------------------------------------
-
-    if option_key == "AISLAR":
-
-        write_integrity_state(
-            session_id=session.id,
-            mode="ISOLATED",
-            reason=(
-                "Módulo académico aislado "
-                "desde GATE-002."
-            ),
-        )
-
-        return (
-            True,
-            "Módulo académico aislado."
-        )
-
-    # --------------------------------------------------
-    # NO ACTUAR
-    # --------------------------------------------------
-
-    if option_key == "NO_ACTUAR":
-
-        write_integrity_state(
-            session_id=session.id,
-            mode="NONE",
-            reason=(
-                "GATE-002 finalizado sin aplicar "
-                "medidas de protección de integridad."
-            ),
-        )
-
-        return (
-            True,
-            "No se aplicaron medidas de respuesta."
-        )
-
-    return (
-        False,
-        "Opción de respuesta de integridad no reconocida."
-    )
 
 def score_session(db, session_id: int) -> dict:
     session = db.get(SessionRun, session_id)
@@ -610,22 +364,24 @@ def session_create(
         db.refresh(s)
 
         # --------------------------------------------------
-        # REINICIO DEL LABORATORIO
+        # REINICIO CONFIGURABLE DEL LABORATORIO
         # --------------------------------------------------
-        # Cada nueva sesión comienza sin medidas de
-        # contención heredadas de ejecuciones anteriores.
 
-        reset_containment_state(
-            s.id
+        scenario = load_scenario(
+            scenario_id
         )
 
-
-        if scenario_id == "CR-002":
-
-            reset_academic_records()
-
-            reset_integrity_state(
+        reset_ok, reset_reason = (
+            reset_scenario_runtime(
+                scenario,
                 s.id
+            )
+        )
+
+        if not reset_ok:
+            return HTMLResponse(
+                reset_reason,
+                status_code=500
             )
 
 
@@ -1408,45 +1164,24 @@ def gate_submit(
             )
 
         # --------------------------------------------------
-        # CONSECUENCIA TÉCNICA DE GATE-002
+        # CONSECUENCIA TÉCNICA CONFIGURABLE
         # --------------------------------------------------
 
-        if (
-            session.scenario_id == "CR-001"
-            and gate_id == "GATE-002"
-        ):
-
-            containment_ok, containment_reason = (
-                apply_containment_action(
-                    db,
-                    session,
-                    option_key
-                )
+        action_ok, action_reason = (
+            execute_gate_action(
+                scenario,
+                gate_id,
+                db,
+                session,
+                option_key
             )
+        )
 
-            if not containment_ok:
-                return HTMLResponse(
-                    containment_reason,
-                    status_code=500
-                )
-
-        if (
-            session.scenario_id == "CR-002"
-            and gate_id == "GATE-002"
-        ):
-
-            integrity_ok, integrity_reason = (
-                apply_integrity_action(
-                    session,
-                    option_key
-                )
+        if not action_ok:
+            return HTMLResponse(
+                action_reason,
+                status_code=500
             )
-
-            if not integrity_ok:
-                return HTMLResponse(
-                    integrity_reason,
-                    status_code=500
-                )
 
         # --------------------------------------------------
         # REGISTRO DE LA DECISIÓN

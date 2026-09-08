@@ -17,6 +17,13 @@ metrics:
   - TTE
   - TTC
 
+runtime:
+  reset_actions:
+    - RESET_CONTAINMENT
+
+technical_actions:
+  GATE-002: CONTAINMENT_RESPONSE
+
 injects:
 
   # ==================================================

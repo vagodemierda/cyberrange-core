@@ -1,5 +1,10 @@
 from typing import Any
 
+from core.actions import (
+    SUPPORTED_RESET_ACTIONS,
+    SUPPORTED_GATE_ACTIONS,
+)
+
 
 SUPPORTED_TELEMETRY_DETECTORS = {
     "AUTHENTICATION",
@@ -612,6 +617,156 @@ def validate_scenario(
                 "niveles de desempeño."
             )
         )
+
+    # ======================================================
+    # CONFIGURACIÓN DE RUNTIME
+    # ======================================================
+
+    runtime = scenario.get(
+        "runtime",
+        {}
+    )
+
+    if not isinstance(
+        runtime,
+        dict
+    ):
+
+        errors.append(
+            (
+                f"{scenario_id}: runtime "
+                "debe ser un diccionario."
+            )
+        )
+
+    else:
+
+        reset_actions = runtime.get(
+            "reset_actions",
+            []
+        )
+
+        if not isinstance(
+            reset_actions,
+            list
+        ):
+
+            errors.append(
+                (
+                    f"{scenario_id}: "
+                    "runtime.reset_actions "
+                    "debe ser una lista."
+                )
+            )
+
+        else:
+
+            if (
+                len(reset_actions)
+                != len(set(reset_actions))
+            ):
+
+                errors.append(
+                    (
+                        f"{scenario_id}: "
+                        "runtime.reset_actions "
+                        "contiene acciones duplicadas."
+                    )
+                )
+
+            for action_name in reset_actions:
+
+                if (
+                    action_name
+                    not in
+                    SUPPORTED_RESET_ACTIONS
+                ):
+
+                    errors.append(
+                        (
+                            f"{scenario_id}: "
+                            "acción de reinicio "
+                            f"no soportada: "
+                            f"{action_name}."
+                        )
+                    )
+
+    # ======================================================
+    # ACCIONES TÉCNICAS DE GATES
+    # ======================================================
+
+    technical_actions = scenario.get(
+        "technical_actions",
+        {}
+    )
+
+    if not isinstance(
+        technical_actions,
+        dict
+    ):
+
+        errors.append(
+            (
+                f"{scenario_id}: "
+                "technical_actions "
+                "debe ser un diccionario."
+            )
+        )
+
+    else:
+
+        for (
+            gate_id,
+            action_name
+        ) in technical_actions.items():
+
+            referenced_gate = (
+                items_by_id.get(
+                    gate_id
+                )
+            )
+
+            if not referenced_gate:
+
+                errors.append(
+                    (
+                        f"{scenario_id}: "
+                        "technical_actions "
+                        f"referencia {gate_id}, "
+                        "que no existe."
+                    )
+                )
+
+                continue
+
+            if (
+                referenced_gate.get("type")
+                != "GATE"
+            ):
+
+                errors.append(
+                    (
+                        f"{scenario_id}: "
+                        f"{gate_id} tiene acción "
+                        "técnica configurada, "
+                        "pero no es un GATE."
+                    )
+                )
+
+            if (
+                action_name
+                not in
+                SUPPORTED_GATE_ACTIONS
+            ):
+
+                errors.append(
+                    (
+                        f"{scenario_id}: "
+                        "acción técnica "
+                        f"no soportada: "
+                        f"{action_name}."
+                    )
+                )
 
     return errors
 

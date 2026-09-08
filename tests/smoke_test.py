@@ -69,6 +69,8 @@ required_files = [
     "core/db.py",
     "core/models.py",
     "core/telemetry.py",
+    "core/actions.py",
+    "core/scenario_validator.py",
     "core/scenario_loader.py",
     "core/templates/home.html",
     "core/templates/scenario.html",

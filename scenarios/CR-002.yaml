@@ -18,6 +18,15 @@ metrics:
   - TTE
   - TTC
 
+runtime:
+  reset_actions:
+    - RESET_CONTAINMENT
+    - RESET_ACADEMIC_RECORDS
+    - RESET_INTEGRITY
+
+technical_actions:
+  GATE-002: INTEGRITY_RESPONSE
+
 injects:
 
   # ==================================================
