@@ -27,6 +27,9 @@ from core.scenario_loader import (
     load_scenario,
 )
 
+from core.scenario_validator import (
+    validate_scenario,
+)
 
 def ok(message):
     print(f"[OK]   {message}")
@@ -120,6 +123,33 @@ for scenario_id in sorted(scenario_ids):
     scenario = load_scenario(
         scenario_id
     )
+
+    validation_errors = (
+        validate_scenario(
+            scenario
+        )
+    )
+
+    check(
+        not validation_errors,
+        (
+            f"{scenario_id}: "
+            "contrato de escenario válido"
+        )
+    )
+
+    if validation_errors:
+
+        for validation_error in (
+            validation_errors
+        ):
+
+            fail(
+                (
+                    f"{scenario_id}: "
+                    f"{validation_error}"
+                )
+            )
 
     injects = scenario.get(
         "injects",
