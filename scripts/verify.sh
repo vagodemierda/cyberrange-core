@@ -10,32 +10,36 @@ echo " CYBERRANGECORE - VALIDACIÓN COMPLETA"
 echo "============================================================"
 echo
 
-echo "[1/7] Smoke test"
+echo "[1/8] Smoke test"
 python tests/smoke_test.py
 
 echo
-echo "[2/7] Scenario contract test"
+echo "[2/8] Scenario contract test"
 python tests/scenario_contract_test.py
 
 echo
-echo "[3/7] Session guard test"
+echo "[3/8] Session guard test"
 python tests/session_guard_test.py
 
 echo
-echo "[4/7] Functional test"
+echo "[4/8] Functional test"
 python tests/functional_test.py
 
 echo
-echo "[5/7] CR-003 functional test"
+echo "[5/8] CR-003 functional test"
 python tests/cr003_functional_test.py
 
 echo
-echo "[6/7] End-to-end acceptance test"
+echo "[6/8] End-to-end acceptance test"
 python tests/e2e_test.py
 
 echo
-echo "[7/7] CR-003 end-to-end acceptance test"
+echo "[7/8] CR-003 end-to-end acceptance test"
 python tests/cr003_e2e_test.py
+
+echo
+echo "[8/8] CR-003 adverse path test"
+python tests/cr003_adverse_path_test.py
 
 echo
 echo "============================================================"
