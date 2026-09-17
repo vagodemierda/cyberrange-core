@@ -20,6 +20,10 @@ from target_app.init_db import (
     restore_academic_record,
 )
 
+from advanced_incident_state import (
+    reset_advanced_incident_state,
+)
+
 
 # ==========================================================
 # ACCIONES SOPORTADAS POR EL MOTOR
@@ -29,6 +33,7 @@ SUPPORTED_RESET_ACTIONS = {
     "RESET_CONTAINMENT",
     "RESET_ACADEMIC_RECORDS",
     "RESET_INTEGRITY",
+    "RESET_ADVANCED_INCIDENT",
 }
 
 SUPPORTED_GATE_ACTIONS = {
@@ -303,6 +308,15 @@ def _reset_integrity(
     )
 
 
+def _reset_advanced_incident(
+    session_id: int
+) -> None:
+
+    reset_advanced_incident_state(
+        session_id
+    )
+
+
 RESET_ACTION_HANDLERS = {
     "RESET_CONTAINMENT": (
         _reset_containment
@@ -312,6 +326,9 @@ RESET_ACTION_HANDLERS = {
     ),
     "RESET_INTEGRITY": (
         _reset_integrity
+    ),
+    "RESET_ADVANCED_INCIDENT": (
+        _reset_advanced_incident
     ),
 }
 

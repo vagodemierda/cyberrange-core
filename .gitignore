@@ -42,3 +42,5 @@ target_app.before_sqli/
 *.swp
 *~
 *.save
+
+data/advanced_incident_state.json

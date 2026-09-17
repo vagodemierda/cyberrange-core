@@ -398,3 +398,279 @@ def run_detector(
     return handler(
         config
     )
+
+
+# ==========================================================
+# DETECTORES DE INCIDENTE AVANZADO
+# ==========================================================
+
+def _recent_events_by_type(
+    event_types: set[str],
+    window_minutes: int = 10
+) -> list[dict]:
+
+    events = read_events(
+        limit=500
+    )
+
+    current_time = datetime.now(
+        timezone.utc
+    )
+
+    cutoff = (
+        current_time
+        - timedelta(
+            minutes=window_minutes
+        )
+    )
+
+    matches = []
+
+    for event in events:
+
+        timestamp_raw = event.get(
+            "timestamp"
+        )
+
+        if not timestamp_raw:
+            continue
+
+        try:
+
+            event_time = (
+                datetime.fromisoformat(
+                    str(timestamp_raw).replace(
+                        "Z",
+                        "+00:00"
+                    )
+                )
+            )
+
+        except ValueError:
+            continue
+
+        if event_time.tzinfo is None:
+
+            event_time = event_time.replace(
+                tzinfo=timezone.utc
+            )
+
+        if (
+            event_time >= cutoff
+            and event.get("event_type")
+            in event_types
+        ):
+
+            matches.append(
+                event
+            )
+
+    return matches
+
+
+def analyze_account_compromise(
+    window_minutes: int = 10
+) -> dict:
+
+    event_types = {
+        "ACCOUNT_COMPROMISE",
+        "ANOMALOUS_LOGIN",
+        "SENSITIVE_ACCESS",
+    }
+
+    events = _recent_events_by_type(
+        event_types,
+        window_minutes
+    )
+
+    compromised = any(
+        event.get("event_type")
+        == "ACCOUNT_COMPROMISE"
+        for event in events
+    )
+
+    return {
+        "status": (
+            "COMPROMISED"
+            if compromised
+            else "NORMAL"
+        ),
+        "message": (
+            "Se detectó evidencia de compromiso "
+            "de una cuenta institucional."
+            if compromised
+            else
+            "No se detectó compromiso confirmado "
+            "de cuenta en la ventana analizada."
+        ),
+        "window_minutes": window_minutes,
+        "event_count": len(events),
+        "latest_event": (
+            events[-1]
+            if events
+            else None
+        ),
+        "events": events,
+    }
+
+
+def analyze_exfiltration(
+    window_minutes: int = 10
+) -> dict:
+
+    event_types = {
+        "BULK_RECORD_ACCESS",
+        "EXPORT_CREATED",
+        "DATA_EXFILTRATION",
+    }
+
+    events = _recent_events_by_type(
+        event_types,
+        window_minutes
+    )
+
+    exfiltration_events = [
+        event
+        for event in events
+        if event.get("event_type")
+        == "DATA_EXFILTRATION"
+    ]
+
+    detected = bool(
+        exfiltration_events
+    )
+
+    return {
+        "status": (
+            "EXFILTRATING"
+            if detected
+            else "NORMAL"
+        ),
+        "message": (
+            "Se detectó transferencia no autorizada "
+            "de información sensible."
+            if detected
+            else
+            "No se detectó exfiltración confirmada "
+            "en la ventana analizada."
+        ),
+        "window_minutes": window_minutes,
+        "event_count": len(events),
+        "exfiltration_count": len(
+            exfiltration_events
+        ),
+        "latest_event": (
+            events[-1]
+            if events
+            else None
+        ),
+        "events": events,
+    }
+
+
+def analyze_ransomware(
+    window_minutes: int = 10
+) -> dict:
+
+    event_types = {
+        "MASS_FILE_WRITE",
+        "FILE_RENAME_BURST",
+        "RANSOM_NOTE_CREATED",
+    }
+
+    events = _recent_events_by_type(
+        event_types,
+        window_minutes
+    )
+
+    ransomware_confirmed = any(
+        event.get("event_type")
+        == "RANSOM_NOTE_CREATED"
+        for event in events
+    )
+
+    return {
+        "status": (
+            "RANSOMWARE_ACTIVE"
+            if ransomware_confirmed
+            else "NORMAL"
+        ),
+        "message": (
+            "Se detectó actividad compatible "
+            "con ransomware dentro del entorno."
+            if ransomware_confirmed
+            else
+            "No se detectó actividad confirmada "
+            "de ransomware."
+        ),
+        "window_minutes": window_minutes,
+        "event_count": len(events),
+        "latest_event": (
+            events[-1]
+            if events
+            else None
+        ),
+        "events": events,
+    }
+
+
+def _run_account_compromise_detector(
+    config: dict
+) -> dict:
+
+    return analyze_account_compromise(
+        window_minutes=int(
+            config.get(
+                "window_minutes",
+                10
+            )
+        )
+    )
+
+
+def _run_exfiltration_detector(
+    config: dict
+) -> dict:
+
+    return analyze_exfiltration(
+        window_minutes=int(
+            config.get(
+                "window_minutes",
+                10
+            )
+        )
+    )
+
+
+def _run_ransomware_detector(
+    config: dict
+) -> dict:
+
+    return analyze_ransomware(
+        window_minutes=int(
+            config.get(
+                "window_minutes",
+                10
+            )
+        )
+    )
+
+
+DETECTOR_HANDLERS.update(
+    {
+        "ACCOUNT_COMPROMISE": (
+            _run_account_compromise_detector
+        ),
+        "EXFILTRATION": (
+            _run_exfiltration_detector
+        ),
+        "RANSOMWARE": (
+            _run_ransomware_detector
+        ),
+    }
+)
+
+
+SUPPORTED_TELEMETRY_DETECTORS = frozenset(
+    DETECTOR_HANDLERS.keys()
+)
