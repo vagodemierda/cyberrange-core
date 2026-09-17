@@ -777,6 +777,13 @@ def ensure_gate_available(
     gate_id = gate.get("id")
 
     # --------------------------------------------------
+    # ESTADO DE LA SESIÓN
+    # --------------------------------------------------
+
+    if session.status != "RUNNING":
+        return False, "La sesión está finalizada."
+
+    # --------------------------------------------------
     # SI EL GATE YA FUE LIBERADO
     # --------------------------------------------------
 
@@ -791,9 +798,6 @@ def ensure_gate_available(
 
     if existing_release:
         return True, ""
-
-    if session.status != "RUNNING":
-        return False, "La sesión está finalizada."
 
     # --------------------------------------------------
     # DEPENDENCIA DE UNA DECISIÓN ANTERIOR
@@ -1082,6 +1086,16 @@ def gate_submit(
             )
 
         # --------------------------------------------------
+        # IMPEDIR DECISIONES EN SESIONES FINALIZADAS
+        # --------------------------------------------------
+
+        if session.status != "RUNNING":
+            return HTMLResponse(
+                "La sesión está finalizada.",
+                status_code=403
+            )
+
+        # --------------------------------------------------
         # IMPEDIR DECISIONES DUPLICADAS
         # --------------------------------------------------
 
@@ -1223,10 +1237,15 @@ def session_finish(session_id: int):
                 status_code=404
             )
 
-        if session.status != "FINISHED":
-            session.status = "FINISHED"
-            session.finished_ts = now()
-            db.commit()
+        if session.status == "FINISHED":
+            return HTMLResponse(
+                "La sesión ya fue finalizada.",
+                status_code=409
+            )
+
+        session.status = "FINISHED"
+        session.finished_ts = now()
+        db.commit()
 
         return RedirectResponse(
             url=f"/session/{session_id}",
