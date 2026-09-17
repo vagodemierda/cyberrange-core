@@ -70,6 +70,7 @@ required_files = [
     "core/models.py",
     "core/telemetry.py",
     "core/actions.py",
+    "advanced_incident_state.py",
     "core/scenario_validator.py",
     "core/scenario_loader.py",
     "core/templates/home.html",

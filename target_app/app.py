@@ -14,6 +14,11 @@ from range_state import (
     read_containment_state,
 )
 
+from advanced_incident_state import (
+    read_advanced_incident_state,
+    update_advanced_incident_state,
+)
+
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -555,3 +560,306 @@ def update_academic_record(
             '<p><a href="/records">Ver registro</a></p>'
         )
     )
+
+
+# ==========================================================
+# CR-003 - INCIDENTE AVANZADO SIMULADO
+# ==========================================================
+
+@app.get("/advanced/status")
+def advanced_status():
+
+    return read_advanced_incident_state()
+
+
+@app.post("/advanced/compromise")
+def advanced_compromise(
+    request: Request
+):
+
+    state = update_advanced_incident_state(
+        stage="ACCOUNT_COMPROMISED",
+        account_compromised=True,
+        compromised_account="cuenta_institucional",
+        last_action="ACCOUNT_COMPROMISE"
+    )
+
+    register_event(
+        request=request,
+        event_type="ANOMALOUS_LOGIN",
+        status="WARNING",
+        username="cuenta_institucional",
+        message=(
+            "Inicio de sesión desde un contexto "
+            "atípico para la cuenta."
+        )
+    )
+
+    register_event(
+        request=request,
+        event_type="SENSITIVE_ACCESS",
+        status="WARNING",
+        username="cuenta_institucional",
+        message=(
+            "La cuenta accedió a recursos sensibles "
+            "fuera de su patrón habitual."
+        )
+    )
+
+    register_event(
+        request=request,
+        event_type="ACCOUNT_COMPROMISE",
+        status="CRITICAL",
+        username="cuenta_institucional",
+        message=(
+            "Compromiso de cuenta confirmado "
+            "dentro del escenario avanzado."
+        )
+    )
+
+    return {
+        "status": "COMPROMISED",
+        "state": state,
+    }
+
+
+@app.post("/advanced/exfiltrate")
+def advanced_exfiltrate(
+    request: Request
+):
+
+    state = read_advanced_incident_state()
+
+    if state.get(
+        "account_blocked"
+    ):
+
+        register_event(
+            request=request,
+            event_type="EXFILTRATION_BLOCKED",
+            status="BLOCKED",
+            username=state.get(
+                "compromised_account",
+                ""
+            ),
+            message=(
+                "Transferencia bloqueada porque "
+                "la cuenta fue contenida."
+            )
+        )
+
+        return HTMLResponse(
+            "Cuenta bloqueada.",
+            status_code=403
+        )
+
+    if state.get(
+        "exfiltration_blocked"
+    ):
+
+        register_event(
+            request=request,
+            event_type="EXFILTRATION_BLOCKED",
+            status="BLOCKED",
+            username=state.get(
+                "compromised_account",
+                ""
+            ),
+            message=(
+                "Transferencia bloqueada por "
+                "medida de contención."
+            )
+        )
+
+        return HTMLResponse(
+            "Exfiltración bloqueada.",
+            status_code=403
+        )
+
+    if not state.get(
+        "account_compromised"
+    ):
+
+        return HTMLResponse(
+            "No existe una cuenta comprometida.",
+            status_code=409
+        )
+
+    current_records = int(
+        state.get(
+            "exfiltrated_records",
+            0
+        )
+    )
+
+    total_records = (
+        current_records + 120
+    )
+
+    state = update_advanced_incident_state(
+        stage="EXFILTRATING",
+        exfiltration_active=True,
+        exfiltrated_records=total_records,
+        last_action="DATA_EXFILTRATION"
+    )
+
+    register_event(
+        request=request,
+        event_type="BULK_RECORD_ACCESS",
+        status="WARNING",
+        username=state.get(
+            "compromised_account",
+            ""
+        ),
+        message=(
+            "Acceso masivo a registros "
+            "institucionales."
+        )
+    )
+
+    register_event(
+        request=request,
+        event_type="EXPORT_CREATED",
+        status="WARNING",
+        username=state.get(
+            "compromised_account",
+            ""
+        ),
+        message=(
+            "Se generó una exportación masiva "
+            "de información."
+        )
+    )
+
+    register_event(
+        request=request,
+        event_type="DATA_EXFILTRATION",
+        status="CRITICAL",
+        username=state.get(
+            "compromised_account",
+            ""
+        ),
+        message=(
+            f"Exfiltración simulada de "
+            f"{total_records} registros."
+        )
+    )
+
+    return {
+        "status": "EXFILTRATING",
+        "exfiltrated_records": (
+            total_records
+        ),
+        "state": state,
+    }
+
+
+@app.post("/advanced/ransomware")
+def advanced_ransomware(
+    request: Request
+):
+
+    state = read_advanced_incident_state()
+
+    if state.get(
+        "host_isolated"
+    ):
+
+        register_event(
+            request=request,
+            event_type="RANSOMWARE_BLOCKED",
+            status="BLOCKED",
+            message=(
+                "La actividad no puede continuar "
+                "porque el host está aislado."
+            )
+        )
+
+        return HTMLResponse(
+            "Host aislado.",
+            status_code=403
+        )
+
+    if state.get(
+        "segment_isolated"
+    ):
+
+        register_event(
+            request=request,
+            event_type="RANSOMWARE_BLOCKED",
+            status="BLOCKED",
+            message=(
+                "La actividad no puede continuar "
+                "porque el segmento está aislado."
+            )
+        )
+
+        return HTMLResponse(
+            "Segmento aislado.",
+            status_code=503
+        )
+
+    if not state.get(
+        "account_compromised"
+    ):
+
+        return HTMLResponse(
+            "El incidente avanzado no está activo.",
+            status_code=409
+        )
+
+    current_affected = int(
+        state.get(
+            "affected_records",
+            0
+        )
+    )
+
+    affected_records = (
+        current_affected + 38
+    )
+
+    state = update_advanced_incident_state(
+        stage="RANSOMWARE_ACTIVE",
+        ransomware_active=True,
+        ransom_note_created=True,
+        affected_records=affected_records,
+        last_action="RANSOMWARE_ACTIVITY"
+    )
+
+    register_event(
+        request=request,
+        event_type="MASS_FILE_WRITE",
+        status="CRITICAL",
+        message=(
+            "Incremento masivo de operaciones "
+            "de escritura simulado."
+        )
+    )
+
+    register_event(
+        request=request,
+        event_type="FILE_RENAME_BURST",
+        status="CRITICAL",
+        message=(
+            "Cambio masivo de nombres de "
+            "recursos simulado."
+        )
+    )
+
+    register_event(
+        request=request,
+        event_type="RANSOM_NOTE_CREATED",
+        status="CRITICAL",
+        message=(
+            "Nota de rescate simulada creada."
+        )
+    )
+
+    return {
+        "status": "RANSOMWARE_ACTIVE",
+        "affected_records": (
+            affected_records
+        ),
+        "state": state,
+    }

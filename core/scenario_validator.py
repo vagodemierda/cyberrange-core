@@ -5,12 +5,9 @@ from core.actions import (
     SUPPORTED_GATE_ACTIONS,
 )
 
-
-SUPPORTED_TELEMETRY_DETECTORS = {
-    "AUTHENTICATION",
-    "COMPROMISE",
-    "DATA_INTEGRITY",
-}
+from core.telemetry import (
+    SUPPORTED_TELEMETRY_DETECTORS,
+)
 
 
 def validate_scenario(
@@ -237,6 +234,68 @@ def validate_scenario(
                 "option"
             )
 
+            required_options = condition.get(
+                "options"
+            )
+
+            if (
+                required_option is not None
+                and required_options is not None
+            ):
+
+                errors.append(
+                    (
+                        f"{scenario_id}: "
+                        f"{item_id} no puede definir "
+                        "option y options simultáneamente."
+                    )
+                )
+
+            if required_options is not None:
+
+                if (
+                    not isinstance(
+                        required_options,
+                        list
+                    )
+                    or not required_options
+                ):
+
+                    errors.append(
+                        (
+                            f"{scenario_id}: "
+                            f"{item_id} debe definir "
+                            "options como una lista "
+                            "no vacía."
+                        )
+                    )
+
+                    allowed_options = []
+
+                else:
+
+                    allowed_options = (
+                        required_options
+                    )
+
+            elif required_option is not None:
+
+                allowed_options = [
+                    required_option
+                ]
+
+            else:
+
+                allowed_options = []
+
+                errors.append(
+                    (
+                        f"{scenario_id}: "
+                        f"{item_id} debe definir "
+                        "option u options."
+                    )
+                )
+
             referenced_item = (
                 items_by_id.get(
                     required_gate
@@ -278,20 +337,24 @@ def validate_scenario(
                     )
                 }
 
-                if (
-                    required_option
-                    not in valid_options
+                for required_value in (
+                    allowed_options
                 ):
 
-                    errors.append(
-                        (
-                            f"{scenario_id}: "
-                            f"{item_id} requiere "
-                            f"{required_gate}="
-                            f"{required_option}, pero "
-                            "esa opción no existe."
+                    if (
+                        required_value
+                        not in valid_options
+                    ):
+
+                        errors.append(
+                            (
+                                f"{scenario_id}: "
+                                f"{item_id} requiere "
+                                f"{required_gate}="
+                                f"{required_value}, pero "
+                                "esa opción no existe."
+                            )
                         )
-                    )
 
         # --------------------------------------------------
         # RELEASE AFTER
