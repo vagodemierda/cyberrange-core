@@ -599,8 +599,25 @@ def session_view(request: Request, session_id: int):
 
                 if condition:
 
-                    required_gate = condition.get("gate_id")
-                    required_option = condition.get("option")
+                    required_gate = condition.get(
+                        "gate_id"
+                    )
+
+                    required_options = condition.get(
+                        "options"
+                    )
+
+                    if required_options is None:
+
+                        required_option = condition.get(
+                            "option"
+                        )
+
+                        required_options = (
+                            [required_option]
+                            if required_option is not None
+                            else []
+                        )
 
                     previous_decision = decisions_by_gate.get(
                         required_gate
@@ -611,7 +628,7 @@ def session_view(request: Request, session_id: int):
 
                     if (
                         previous_decision.option_key
-                        != required_option
+                        not in required_options
                     ):
                         continue
 
@@ -733,9 +750,21 @@ def ensure_gate_available(
             "gate_id"
         )
 
-        required_option = condition.get(
-            "option"
+        required_options = condition.get(
+            "options"
         )
+
+        if required_options is None:
+
+            required_option = condition.get(
+                "option"
+            )
+
+            required_options = (
+                [required_option]
+                if required_option is not None
+                else []
+            )
 
         previous_decision = (
             db.query(Decision)
@@ -754,7 +783,7 @@ def ensure_gate_available(
 
         if (
             previous_decision.option_key
-            != required_option
+            not in required_options
         ):
             return (
                 False,
