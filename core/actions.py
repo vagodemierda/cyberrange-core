@@ -22,6 +22,8 @@ from target_app.init_db import (
 
 from advanced_incident_state import (
     reset_advanced_incident_state,
+    read_advanced_incident_state,
+    update_advanced_incident_state,
 )
 
 
@@ -39,6 +41,10 @@ SUPPORTED_RESET_ACTIONS = {
 SUPPORTED_GATE_ACTIONS = {
     "CONTAINMENT_RESPONSE",
     "INTEGRITY_RESPONSE",
+    "ADVANCED_IDENTITY_RESPONSE",
+    "ADVANCED_EXFILTRATION_RESPONSE",
+    "ADVANCED_RANSOMWARE_RESPONSE",
+    "ADVANCED_RECOVERY_RESPONSE",
 }
 
 
@@ -280,6 +286,333 @@ def apply_integrity_action(
 
 
 # ==========================================================
+# INCIDENTE AVANZADO - IDENTIDAD
+# ==========================================================
+
+def _validate_advanced_session(
+    session: SessionRun
+) -> tuple[bool, str]:
+
+    state = read_advanced_incident_state()
+
+    state_session_id = state.get(
+        "session_id"
+    )
+
+    if (
+        state_session_id is not None
+        and state_session_id != session.id
+    ):
+        return (
+            False,
+            "El estado avanzado pertenece "
+            "a otra sesión."
+        )
+
+    return (
+        True,
+        ""
+    )
+
+
+def apply_advanced_identity_action(
+    session: SessionRun,
+    option_key: str
+) -> tuple[bool, str]:
+
+    valid, reason = (
+        _validate_advanced_session(
+            session
+        )
+    )
+
+    if not valid:
+        return (
+            False,
+            reason
+        )
+
+    if option_key == "REVOCAR_CREDENCIALES":
+
+        update_advanced_incident_state(
+            credentials_revoked=True,
+            last_action="CREDENTIALS_REVOKED"
+        )
+
+        return (
+            True,
+            "Credenciales comprometidas revocadas."
+        )
+
+    if option_key == "ESCALAR":
+
+        update_advanced_incident_state(
+            last_action="INCIDENT_ESCALATED"
+        )
+
+        return (
+            True,
+            "Incidente escalado al Líder IR."
+        )
+
+    if option_key == "MANTENER_OBSERVACION":
+
+        update_advanced_incident_state(
+            last_action="IDENTITY_MONITORING"
+        )
+
+        return (
+            True,
+            "La cuenta permanece bajo observación."
+        )
+
+    return (
+        False,
+        "Opción de respuesta de identidad no reconocida."
+    )
+
+
+# ==========================================================
+# INCIDENTE AVANZADO - EXFILTRACIÓN
+# ==========================================================
+
+def apply_advanced_exfiltration_action(
+    session: SessionRun,
+    option_key: str
+) -> tuple[bool, str]:
+
+    valid, reason = (
+        _validate_advanced_session(
+            session
+        )
+    )
+
+    if not valid:
+        return (
+            False,
+            reason
+        )
+
+    state = read_advanced_incident_state()
+
+    if option_key == "BLOQUEAR_CUENTA":
+
+        update_advanced_incident_state(
+            account_blocked=True,
+            exfiltration_active=False,
+            exfiltration_blocked=True,
+            last_action="ACCOUNT_BLOCKED"
+        )
+
+        return (
+            True,
+            "Cuenta comprometida bloqueada."
+        )
+
+    if option_key == "AISLAR_SERVICIO":
+
+        update_advanced_incident_state(
+            service_available=False,
+            exfiltration_active=False,
+            exfiltration_blocked=True,
+            last_action="SERVICE_ISOLATED"
+        )
+
+        return (
+            True,
+            "Servicio afectado aislado."
+        )
+
+    if option_key == "CONTINUAR_MONITOREO":
+
+        current_records = int(
+            state.get(
+                "exfiltrated_records",
+                0
+            )
+        )
+
+        update_advanced_incident_state(
+            exfiltration_active=True,
+            exfiltrated_records=(
+                current_records + 60
+            ),
+            last_action="EXFILTRATION_MONITORED"
+        )
+
+        return (
+            True,
+            "La exfiltración continúa bajo monitoreo."
+        )
+
+    return (
+        False,
+        "Opción de contención de exfiltración "
+        "no reconocida."
+    )
+
+
+# ==========================================================
+# INCIDENTE AVANZADO - RANSOMWARE
+# ==========================================================
+
+def apply_advanced_ransomware_action(
+    session: SessionRun,
+    option_key: str
+) -> tuple[bool, str]:
+
+    valid, reason = (
+        _validate_advanced_session(
+            session
+        )
+    )
+
+    if not valid:
+        return (
+            False,
+            reason
+        )
+
+    state = read_advanced_incident_state()
+
+    if option_key == "AISLAR_HOST":
+
+        update_advanced_incident_state(
+            stage="CONTAINED",
+            host_isolated=True,
+            ransomware_active=False,
+            propagation_blocked=True,
+            last_action="HOST_ISOLATED"
+        )
+
+        return (
+            True,
+            "Host comprometido aislado."
+        )
+
+    if option_key == "AISLAR_SEGMENTO":
+
+        update_advanced_incident_state(
+            stage="CONTAINED",
+            segment_isolated=True,
+            ransomware_active=False,
+            propagation_blocked=True,
+            service_available=False,
+            last_action="SEGMENT_ISOLATED"
+        )
+
+        return (
+            True,
+            "Segmento afectado aislado."
+        )
+
+    if option_key == "NO_INTERRUMPIR":
+
+        affected_records = int(
+            state.get(
+                "affected_records",
+                0
+            )
+        )
+
+        update_advanced_incident_state(
+            stage="RANSOMWARE_ACTIVE",
+            ransomware_active=True,
+            affected_records=(
+                affected_records + 40
+            ),
+            last_action="RANSOMWARE_PROPAGATING"
+        )
+
+        return (
+            True,
+            "La actividad continúa sin aislamiento."
+        )
+
+    return (
+        False,
+        "Opción de respuesta a ransomware "
+        "no reconocida."
+    )
+
+
+# ==========================================================
+# INCIDENTE AVANZADO - RECUPERACIÓN
+# ==========================================================
+
+def apply_advanced_recovery_action(
+    session: SessionRun,
+    option_key: str
+) -> tuple[bool, str]:
+
+    valid, reason = (
+        _validate_advanced_session(
+            session
+        )
+    )
+
+    if not valid:
+        return (
+            False,
+            reason
+        )
+
+    if option_key == "RESTAURAR_BACKUP":
+
+        update_advanced_incident_state(
+            stage="RECOVERED",
+            recovery_status="BACKUP_RESTORED",
+            backup_restored=True,
+            service_available=True,
+            ransomware_active=False,
+            residual_risk=True,
+            last_action="BACKUP_RESTORED"
+        )
+
+        return (
+            True,
+            "Servicio restaurado desde respaldo."
+        )
+
+    if option_key == "RECONSTRUIR_SERVICIO":
+
+        update_advanced_incident_state(
+            stage="RECOVERED",
+            recovery_status="SERVICE_REBUILT",
+            service_rebuilt=True,
+            service_available=True,
+            ransomware_active=False,
+            residual_risk=False,
+            last_action="SERVICE_REBUILT"
+        )
+
+        return (
+            True,
+            "Servicio reconstruido desde una base limpia."
+        )
+
+    if option_key == "MANTENER_AISLAMIENTO":
+
+        update_advanced_incident_state(
+            stage="RECOVERING",
+            recovery_status="ISOLATED",
+            service_available=False,
+            ransomware_active=False,
+            last_action="ISOLATION_MAINTAINED"
+        )
+
+        return (
+            True,
+            "El aislamiento se mantiene."
+        )
+
+    return (
+        False,
+        "Opción de recuperación no reconocida."
+    )
+
+
+# ==========================================================
 # RESETTERS GENÉRICOS
 # ==========================================================
 
@@ -362,12 +695,72 @@ def _execute_integrity(
     )
 
 
+def _execute_advanced_identity(
+    db,
+    session: SessionRun,
+    option_key: str
+) -> tuple[bool, str]:
+
+    return apply_advanced_identity_action(
+        session,
+        option_key
+    )
+
+
+def _execute_advanced_exfiltration(
+    db,
+    session: SessionRun,
+    option_key: str
+) -> tuple[bool, str]:
+
+    return apply_advanced_exfiltration_action(
+        session,
+        option_key
+    )
+
+
+def _execute_advanced_ransomware(
+    db,
+    session: SessionRun,
+    option_key: str
+) -> tuple[bool, str]:
+
+    return apply_advanced_ransomware_action(
+        session,
+        option_key
+    )
+
+
+def _execute_advanced_recovery(
+    db,
+    session: SessionRun,
+    option_key: str
+) -> tuple[bool, str]:
+
+    return apply_advanced_recovery_action(
+        session,
+        option_key
+    )
+
+
 GATE_ACTION_HANDLERS = {
     "CONTAINMENT_RESPONSE": (
         _execute_containment
     ),
     "INTEGRITY_RESPONSE": (
         _execute_integrity
+    ),
+    "ADVANCED_IDENTITY_RESPONSE": (
+        _execute_advanced_identity
+    ),
+    "ADVANCED_EXFILTRATION_RESPONSE": (
+        _execute_advanced_exfiltration
+    ),
+    "ADVANCED_RANSOMWARE_RESPONSE": (
+        _execute_advanced_ransomware
+    ),
+    "ADVANCED_RECOVERY_RESPONSE": (
+        _execute_advanced_recovery
     ),
 }
 
