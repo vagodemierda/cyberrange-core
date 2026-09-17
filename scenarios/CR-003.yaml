@@ -1,0 +1,610 @@
+id: CR-003
+
+name: "Exfiltración de información y ransomware en plataforma institucional"
+
+description: >
+  Escenario avanzado de respuesta a incidentes que simula
+  el compromiso progresivo de una cuenta institucional,
+  acceso anómalo a información sensible, exfiltración de
+  datos, actividad compatible con ransomware, contención
+  y recuperación del servicio. El participante debe tomar
+  decisiones sucesivas bajo condiciones de incertidumbre
+  y asumir las consecuencias derivadas de sus decisiones.
+
+roles:
+  - SOC_ANALYST
+  - IR_LEAD
+
+metrics:
+  - TTD
+  - TTE
+  - TTC
+
+runtime:
+  reset_actions:
+    - RESET_ADVANCED_INCIDENT
+
+technical_actions: {}
+
+injects:
+
+  # ==================================================
+  # FASE 1 - COMPROMISO INICIAL
+  # ==================================================
+
+  - id: INJ-001
+    t_min: 0
+    type: ALERT
+    title: "Actividad anómala en cuenta institucional"
+    body: >
+      El sistema de monitoreo identifica actividad
+      incompatible con el patrón habitual de una cuenta
+      institucional. Se observan accesos atípicos y
+      operaciones sobre recursos sensibles.
+
+    telemetry_condition:
+      detector: ACCOUNT_COMPROMISE
+      expected_status: COMPROMISED
+      window_minutes: 10
+
+  # ==================================================
+  # GATE 0 - CLASIFICACIÓN INICIAL
+  # ==================================================
+
+  - id: GATE-000
+    t_min: 0
+    type: GATE
+    title: "Decisión 0: Clasificación de la actividad"
+    question: >
+      Con la evidencia disponible, ¿qué acción inicial
+      adopta frente al comportamiento anómalo de la cuenta?
+    role_required: SOC_ANALYST
+
+    telemetry_condition:
+      detector: ACCOUNT_COMPROMISE
+      expected_status: COMPROMISED
+      window_minutes: 10
+
+    options:
+
+      - key: INVESTIGAR
+        label: "Iniciar investigación del posible compromiso"
+        score: 10
+        outcome: >
+          Se reconoce que la actividad requiere análisis
+          inmediato y se amplía la revisión de evidencias.
+
+      - key: MONITOREAR
+        label: "Mantener la cuenta bajo monitoreo"
+        score: 4
+        outcome: >
+          Se conserva visibilidad sobre la actividad,
+          pero se retrasa una investigación formal mientras
+          el actor adversario mantiene capacidad de acción.
+
+      - key: DESCARTAR
+        label: "Descartar como comportamiento excepcional"
+        score: -10
+        outcome: >
+          No se activa una investigación formal y el
+          compromiso continúa sin una respuesta temprana.
+
+  # --------------------------------------------------
+  # CONSECUENCIAS DE GATE-000
+  # --------------------------------------------------
+
+  - id: INJ-002A
+    t_min: 0
+    type: EVIDENCE
+    title: "Investigación técnica iniciada"
+    body: >
+      El SOC amplía el análisis y confirma que el patrón
+      observado no corresponde al comportamiento habitual
+      de la cuenta. Se prioriza la obtención de evidencia
+      adicional.
+
+    condition:
+      gate_id: GATE-000
+      option: INVESTIGAR
+
+  - id: INJ-002B
+    t_min: 0
+    type: UPDATE
+    title: "Actividad persiste durante monitoreo"
+    body: >
+      La cuenta permanece activa mientras el SOC continúa
+      observando su comportamiento. La ausencia de una
+      intervención temprana permite nuevas operaciones
+      sobre recursos institucionales.
+
+    condition:
+      gate_id: GATE-000
+      option: MONITOREAR
+
+  - id: INJ-002C
+    t_min: 0
+    type: ALERT
+    title: "Compromiso no atendido"
+    body: >
+      La actividad fue descartada inicialmente. Nuevos
+      accesos asociados a la misma cuenta muestran que
+      el comportamiento anómalo continúa y aumenta el
+      riesgo sobre la información institucional.
+
+    condition:
+      gate_id: GATE-000
+      option: DESCARTAR
+
+  # ==================================================
+  # FASE 2 - RESPUESTA A CUENTA COMPROMETIDA
+  # ==================================================
+
+  - id: GATE-001
+    t_min: 0
+    type: GATE
+    title: "Decisión 1: Respuesta ante cuenta comprometida"
+    question: >
+      La actividad continúa y existe evidencia suficiente
+      de compromiso. ¿Cómo procede el SOC?
+    role_required: SOC_ANALYST
+
+    condition:
+      gate_id: GATE-000
+      options:
+        - INVESTIGAR
+        - MONITOREAR
+        - DESCARTAR
+
+    release_after:
+      inject_id: INJ-001
+      delay_min: 0
+
+    options:
+
+      - key: REVOCAR_CREDENCIALES
+        label: "Revocar inmediatamente las credenciales"
+        score: 8
+        outcome: >
+          Se limita el uso posterior de la identidad
+          comprometida, aunque la coordinación formal
+          de respuesta todavía debe continuar.
+
+      - key: ESCALAR
+        label: "Escalar al Líder IR y coordinar respuesta"
+        score: 10
+        outcome: >
+          Se activa una respuesta coordinada y se prepara
+          la contención de las actividades asociadas a la
+          cuenta comprometida.
+
+      - key: MANTENER_OBSERVACION
+        label: "Mantener observación para recopilar evidencia"
+        score: -5
+        outcome: >
+          Se conserva visibilidad adicional sobre el actor,
+          pero aumenta la ventana disponible para nuevas
+          acciones adversarias.
+
+  # --------------------------------------------------
+  # CONSECUENCIAS DE GATE-001
+  # --------------------------------------------------
+
+  - id: INJ-003A
+    t_min: 0
+    type: UPDATE
+    title: "Credenciales revocadas"
+    body: >
+      Se ordena la revocación de las credenciales
+      comprometidas. La medida reduce una vía de acceso,
+      aunque deben investigarse las acciones realizadas
+      antes de la revocación.
+
+    condition:
+      gate_id: GATE-001
+      option: REVOCAR_CREDENCIALES
+
+  - id: INJ-003B
+    t_min: 0
+    type: UPDATE
+    title: "Respuesta coordinada activada"
+    body: >
+      El Líder IR recibe el incidente y se inicia una
+      respuesta coordinada. El equipo revisa accesos,
+      volumen de información consultada y posibles
+      mecanismos de persistencia.
+
+    condition:
+      gate_id: GATE-001
+      option: ESCALAR
+
+  - id: INJ-003C
+    t_min: 0
+    type: ALERT
+    title: "Actor permanece activo"
+    body: >
+      La cuenta continúa bajo observación sin una medida
+      de interrupción. El actor mantiene capacidad para
+      consultar y extraer información institucional.
+
+    condition:
+      gate_id: GATE-001
+      option: MANTENER_OBSERVACION
+
+  # ==================================================
+  # FASE 3 - EXFILTRACIÓN
+  # ==================================================
+
+  - id: INJ-004
+    t_min: 0
+    type: ALERT
+    title: "Exfiltración de información confirmada"
+    body: >
+      La telemetría registra acceso masivo a registros,
+      generación de una exportación y transferencia de
+      información fuera del patrón operativo esperado.
+      La exfiltración se considera confirmada.
+
+    condition:
+      gate_id: GATE-001
+      options:
+        - REVOCAR_CREDENCIALES
+        - ESCALAR
+        - MANTENER_OBSERVACION
+
+    telemetry_condition:
+      detector: EXFILTRATION
+      expected_status: EXFILTRATING
+      window_minutes: 10
+
+  - id: GATE-002
+    t_min: 0
+    type: GATE
+    title: "Decisión 2: Contención de la exfiltración"
+    question: >
+      Ante la exfiltración confirmada, ¿qué medida de
+      contención autoriza el Líder IR?
+    role_required: IR_LEAD
+
+    condition:
+      gate_id: GATE-001
+      options:
+        - REVOCAR_CREDENCIALES
+        - ESCALAR
+        - MANTENER_OBSERVACION
+
+    release_after:
+      inject_id: INJ-004
+      delay_min: 0
+
+    options:
+
+      - key: BLOQUEAR_CUENTA
+        label: "Bloquear la cuenta comprometida"
+        score: 10
+        outcome: >
+          Se corta la identidad utilizada en la actividad
+          maliciosa procurando mantener disponibles los
+          demás servicios institucionales.
+
+      - key: AISLAR_SERVICIO
+        label: "Aislar temporalmente el servicio afectado"
+        score: 6
+        outcome: >
+          Se reduce ampliamente la exposición, pero la
+          medida genera un impacto mayor sobre la
+          disponibilidad del servicio.
+
+      - key: CONTINUAR_MONITOREO
+        label: "Continuar monitoreo sin bloquear todavía"
+        score: -8
+        outcome: >
+          Se preserva visibilidad sobre la actividad,
+          pero la transferencia de información puede
+          continuar mientras no exista contención.
+
+  # --------------------------------------------------
+  # CONSECUENCIAS DE GATE-002
+  # --------------------------------------------------
+
+  - id: INJ-005A
+    t_min: 0
+    type: UPDATE
+    title: "Cuenta comprometida bloqueada"
+    body: >
+      La identidad asociada a la exfiltración fue
+      bloqueada. Se detiene esa vía de acceso y el equipo
+      continúa evaluando posibles mecanismos adicionales.
+
+    condition:
+      gate_id: GATE-002
+      option: BLOQUEAR_CUENTA
+
+  - id: INJ-005B
+    t_min: 0
+    type: UPDATE
+    title: "Servicio temporalmente aislado"
+    body: >
+      El servicio afectado fue aislado para reducir la
+      exposición. La actividad de exfiltración disminuye,
+      pero existe impacto operativo sobre usuarios
+      legítimos.
+
+    condition:
+      gate_id: GATE-002
+      option: AISLAR_SERVICIO
+
+  - id: INJ-005C
+    t_min: 0
+    type: ALERT
+    title: "Exfiltración continúa"
+    body: >
+      No se aplicó una medida inmediata de bloqueo.
+      La actividad adversaria conserva capacidad de
+      acceso mientras el equipo continúa observando.
+
+    condition:
+      gate_id: GATE-002
+      option: CONTINUAR_MONITOREO
+
+  # ==================================================
+  # FASE 4 - RANSOMWARE
+  # ==================================================
+
+  - id: INJ-006
+    t_min: 0
+    type: ALERT
+    title: "Actividad compatible con ransomware"
+    body: >
+      Se detecta un incremento abrupto de escrituras,
+      cambios masivos de nombres y la creación de una
+      nota de rescate simulada. La actividad indica una
+      nueva fase del incidente con impacto potencial
+      sobre la disponibilidad e integridad.
+
+    condition:
+      gate_id: GATE-002
+      options:
+        - BLOQUEAR_CUENTA
+        - AISLAR_SERVICIO
+        - CONTINUAR_MONITOREO
+
+    telemetry_condition:
+      detector: RANSOMWARE
+      expected_status: RANSOMWARE_ACTIVE
+      window_minutes: 10
+
+  - id: GATE-003
+    t_min: 0
+    type: GATE
+    title: "Decisión 3: Contención del ransomware"
+    question: >
+      La actividad de ransomware está confirmada.
+      ¿Qué nivel de aislamiento autoriza?
+    role_required: IR_LEAD
+
+    condition:
+      gate_id: GATE-002
+      options:
+        - BLOQUEAR_CUENTA
+        - AISLAR_SERVICIO
+        - CONTINUAR_MONITOREO
+
+    release_after:
+      inject_id: INJ-006
+      delay_min: 0
+
+    options:
+
+      - key: AISLAR_HOST
+        label: "Aislar únicamente el host comprometido"
+        score: 10
+        outcome: >
+          Se intenta detener la fuente identificada
+          preservando la disponibilidad del resto del
+          entorno institucional.
+
+      - key: AISLAR_SEGMENTO
+        label: "Aislar el segmento completo"
+        score: 7
+        outcome: >
+          Se aplica una contención más agresiva que reduce
+          la posibilidad de propagación con mayor impacto
+          sobre la continuidad operativa.
+
+      - key: NO_INTERRUMPIR
+        label: "No interrumpir todavía el servicio"
+        score: -10
+        outcome: >
+          Se prioriza continuidad inmediata, permitiendo
+          que la actividad maliciosa pueda continuar
+          afectando nuevos recursos.
+
+  # --------------------------------------------------
+  # CONSECUENCIAS DE GATE-003
+  # --------------------------------------------------
+
+  - id: INJ-007A
+    t_min: 0
+    type: UPDATE
+    title: "Host comprometido aislado"
+    body: >
+      El host identificado fue aislado y la propagación
+      desde esa fuente queda contenida mientras otros
+      servicios continúan disponibles.
+
+    condition:
+      gate_id: GATE-003
+      option: AISLAR_HOST
+
+  - id: INJ-007B
+    t_min: 0
+    type: UPDATE
+    title: "Segmento aislado"
+    body: >
+      El segmento afectado fue aislado preventivamente.
+      La medida limita la propagación, aunque múltiples
+      componentes quedan temporalmente indisponibles.
+
+    condition:
+      gate_id: GATE-003
+      option: AISLAR_SEGMENTO
+
+  - id: INJ-007C
+    t_min: 0
+    type: ALERT
+    title: "Propagación sin contención"
+    body: >
+      La actividad no fue interrumpida. Nuevos recursos
+      comienzan a presentar modificaciones compatibles
+      con la propagación del incidente.
+
+    condition:
+      gate_id: GATE-003
+      option: NO_INTERRUMPIR
+
+  # ==================================================
+  # FASE 5 - RECUPERACIÓN
+  # ==================================================
+
+  - id: INJ-008
+    t_min: 0
+    type: UPDATE
+    title: "Fase de recuperación disponible"
+    body: >
+      El equipo debe definir la estrategia para recuperar
+      la operación. Las alternativas presentan diferencias
+      entre velocidad, disponibilidad y riesgo residual.
+
+    condition:
+      gate_id: GATE-003
+      options:
+        - AISLAR_HOST
+        - AISLAR_SEGMENTO
+        - NO_INTERRUMPIR
+
+    release_after:
+      inject_id: INJ-006
+      delay_min: 0
+
+  - id: GATE-004
+    t_min: 0
+    type: GATE
+    title: "Decisión 4: Estrategia de recuperación"
+    question: >
+      ¿Qué estrategia autoriza para recuperar la operación
+      después de la fase de contención?
+    role_required: IR_LEAD
+
+    condition:
+      gate_id: GATE-003
+      options:
+        - AISLAR_HOST
+        - AISLAR_SEGMENTO
+        - NO_INTERRUMPIR
+
+    release_after:
+      inject_id: INJ-008
+      delay_min: 0
+
+    options:
+
+      - key: RESTAURAR_BACKUP
+        label: "Restaurar desde respaldo disponible"
+        score: 7
+        outcome: >
+          La recuperación puede ser más rápida, aunque
+          requiere validar que el punto restaurado no
+          conserve mecanismos o artefactos del incidente.
+
+      - key: RECONSTRUIR_SERVICIO
+        label: "Reconstruir el servicio desde una base limpia"
+        score: 10
+        outcome: >
+          Se prioriza reducir el riesgo residual mediante
+          una reconstrucción controlada, con mayor tiempo
+          requerido para recuperar completamente el servicio.
+
+      - key: MANTENER_AISLAMIENTO
+        label: "Mantener aislamiento y continuar análisis"
+        score: 4
+        outcome: >
+          El riesgo permanece contenido, pero la operación
+          continúa afectada mientras se recopila evidencia
+          adicional antes de recuperar el servicio.
+
+  # --------------------------------------------------
+  # CONSECUENCIAS DE GATE-004
+  # --------------------------------------------------
+
+  - id: INJ-009A
+    t_min: 0
+    type: UPDATE
+    title: "Restauración desde respaldo iniciada"
+    body: >
+      El servicio inicia recuperación desde un respaldo.
+      El equipo debe verificar posteriormente la integridad
+      del entorno y descartar riesgo residual.
+
+    condition:
+      gate_id: GATE-004
+      option: RESTAURAR_BACKUP
+
+  - id: INJ-009B
+    t_min: 0
+    type: UPDATE
+    title: "Reconstrucción controlada iniciada"
+    body: >
+      Se inicia la reconstrucción del servicio desde una
+      base limpia y controlada. La recuperación requiere
+      más tiempo, pero reduce la exposición a artefactos
+      persistentes del incidente.
+
+    condition:
+      gate_id: GATE-004
+      option: RECONSTRUIR_SERVICIO
+
+  - id: INJ-009C
+    t_min: 0
+    type: UPDATE
+    title: "Aislamiento mantenido"
+    body: >
+      El entorno permanece aislado mientras continúa la
+      investigación. El riesgo inmediato permanece
+      contenido, aunque el servicio todavía no recupera
+      su operación normal.
+
+    condition:
+      gate_id: GATE-004
+      option: MANTENER_AISLAMIENTO
+
+evaluation:
+
+  delay_penalty_per_min: 1
+
+  expected_response_min:
+    GATE-000: 2
+    GATE-001: 3
+    GATE-002: 3
+    GATE-003: 2
+    GATE-004: 5
+
+  weights:
+    GATE-000: 1.0
+    GATE-001: 1.0
+    GATE-002: 1.0
+    GATE-003: 1.0
+    GATE-004: 1.0
+
+  performance_levels:
+
+    - name: "Bajo"
+      min_score: -999
+      max_score: 15
+
+    - name: "Medio"
+      min_score: 16
+      max_score: 34
+
+    - name: "Alto"
+      min_score: 35
+      max_score: 50
