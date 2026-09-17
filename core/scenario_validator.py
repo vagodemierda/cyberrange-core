@@ -5,12 +5,9 @@ from core.actions import (
     SUPPORTED_GATE_ACTIONS,
 )
 
-
-SUPPORTED_TELEMETRY_DETECTORS = {
-    "AUTHENTICATION",
-    "COMPROMISE",
-    "DATA_INTEGRITY",
-}
+from core.telemetry import (
+    SUPPORTED_TELEMETRY_DETECTORS,
+)
 
 
 def validate_scenario(

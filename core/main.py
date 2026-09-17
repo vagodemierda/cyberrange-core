@@ -9,9 +9,7 @@ from core.actions import (
 )
 
 from core.telemetry import (
-    analyze_authentication,
-    analyze_compromise,
-    analyze_data_integrity,
+    run_detector,
 )
 
 from html import escape
@@ -559,96 +557,20 @@ def session_view(request: Request, session_id: int):
                         "detector"
                     )
 
-                    telemetry_result = None
-                    expected_status = None
-
-                    # ----------------------------------------------
-                    # DETECTOR DE AUTENTICACIÓN
-                    # ----------------------------------------------
-
-                    if detector == "AUTHENTICATION":
-
-                        expected_status = (
-                            telemetry_condition.get(
-                                "expected_status",
-                                "ALERT"
-                            )
+                    expected_status = (
+                        telemetry_condition.get(
+                            "expected_status"
                         )
+                    )
 
-                        window_minutes = int(
-                            telemetry_condition.get(
-                                "window_minutes",
-                                5
-                            )
+                    telemetry_result = (
+                        run_detector(
+                            detector,
+                            telemetry_condition
                         )
+                    )
 
-                        failure_threshold = int(
-                            telemetry_condition.get(
-                                "failure_threshold",
-                                3
-                            )
-                        )
-
-                        telemetry_result = (
-                            analyze_authentication(
-                                window_minutes=window_minutes,
-                                failure_threshold=failure_threshold
-                            )
-                        )
-
-                    # ----------------------------------------------
-                    # DETECTOR DE COMPROMISO
-                    # ----------------------------------------------
-
-                    elif detector == "COMPROMISE":
-
-                        expected_status = (
-                            telemetry_condition.get(
-                                "expected_status",
-                                "COMPROMISED"
-                            )
-                        )
-
-                        window_minutes = int(
-                            telemetry_condition.get(
-                                "window_minutes",
-                                10
-                            )
-                        )
-
-                        telemetry_result = (
-                            analyze_compromise(
-                                window_minutes=window_minutes
-                            )
-                        )
-
-                    # ----------------------------------------------
-                    # DETECTOR NO RECONOCIDO
-                    # ----------------------------------------------
-
-                    elif detector == "DATA_INTEGRITY":
-
-                        expected_status = (
-                            telemetry_condition.get(
-                                "expected_status",
-                                "TAMPERED"
-                            )
-                        )
-
-                        window_minutes = int(
-                            telemetry_condition.get(
-                                "window_minutes",
-                                10
-                            )
-                        )
-
-                        telemetry_result = (
-                            analyze_data_integrity(
-                                window_minutes=window_minutes
-                            )
-                        )
-
-                    else:
+                    if telemetry_result is None:
                         continue
 
                     # ----------------------------------------------
@@ -946,46 +868,12 @@ def ensure_gate_available(
             "expected_status"
         )
 
-        if detector == "AUTHENTICATION":
+        telemetry_result = run_detector(
+            detector,
+            telemetry_condition
+        )
 
-            telemetry_result = analyze_authentication(
-                window_minutes=int(
-                    telemetry_condition.get(
-                        "window_minutes",
-                        5
-                    )
-                ),
-                failure_threshold=int(
-                    telemetry_condition.get(
-                        "failure_threshold",
-                        3
-                    )
-                )
-            )
-
-        elif detector == "COMPROMISE":
-
-            telemetry_result = analyze_compromise(
-                window_minutes=int(
-                    telemetry_condition.get(
-                        "window_minutes",
-                        10
-                    )
-                )
-            )
-
-        elif detector == "DATA_INTEGRITY":
-
-            telemetry_result = analyze_data_integrity(
-                window_minutes=int(
-                    telemetry_condition.get(
-                        "window_minutes",
-                        10
-                    )
-                )
-            )
-
-        else:
+        if telemetry_result is None:
             return (
                 False,
                 "Detector de telemetría no reconocido."

@@ -303,3 +303,98 @@ def analyze_data_integrity(
         "tampering_events": tampering_events,
         "recent_events": recent_events,
     }
+
+
+# ==========================================================
+# REGISTRO EXTENSIBLE DE DETECTORES
+# ==========================================================
+
+def _run_authentication_detector(
+    config: dict
+) -> dict:
+
+    return analyze_authentication(
+        window_minutes=int(
+            config.get(
+                "window_minutes",
+                5
+            )
+        ),
+        failure_threshold=int(
+            config.get(
+                "failure_threshold",
+                3
+            )
+        )
+    )
+
+
+def _run_compromise_detector(
+    config: dict
+) -> dict:
+
+    return analyze_compromise(
+        window_minutes=int(
+            config.get(
+                "window_minutes",
+                10
+            )
+        )
+    )
+
+
+def _run_data_integrity_detector(
+    config: dict
+) -> dict:
+
+    return analyze_data_integrity(
+        window_minutes=int(
+            config.get(
+                "window_minutes",
+                10
+            )
+        )
+    )
+
+
+DETECTOR_HANDLERS = {
+    "AUTHENTICATION": (
+        _run_authentication_detector
+    ),
+    "COMPROMISE": (
+        _run_compromise_detector
+    ),
+    "DATA_INTEGRITY": (
+        _run_data_integrity_detector
+    ),
+}
+
+
+SUPPORTED_TELEMETRY_DETECTORS = frozenset(
+    DETECTOR_HANDLERS.keys()
+)
+
+
+def run_detector(
+    detector_name: str,
+    config: dict
+) -> dict | None:
+    """
+    Ejecuta un detector registrado sin que el
+    motor principal necesite conocer su
+    implementación concreta.
+
+    Retorna None si el detector no está
+    registrado.
+    """
+
+    handler = DETECTOR_HANDLERS.get(
+        detector_name
+    )
+
+    if not handler:
+        return None
+
+    return handler(
+        config
+    )
